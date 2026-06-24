@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GestPrimes</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #F5F6F8; color: #1A1D23; }
+    input, select, textarea, button { font-family: inherit; }
+    input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    const { useState, useEffect, createElement: h, Fragment } = React;
+
+    const INITIAL_USERS = [
+      { id: 1, name: "Fabien Piriou",    email: "fabien.piriou@ctengineeringgroup.com",   role: "employee", password: "Kx9#mP2q" },
+      { id: 2, name: "Marie Radenac",    email: "marie.radenac@ctengineeringgroup.com",   role: "manager",  password: "Tz5!vL8n" },
+      { id: 3, name: "Adrian Maguet",    email: "adrian.maguet@ctengineeringgroup.com",   role: "manager",  password: "Ry3@wJ6h" },
+      { id: 4, name: "Baptiste Gourret", email: "baptiste.gourret@ctengineeringgroup.com",role: "manager",  password: "1234" },
+    ];
+
+    const PRIME_TYPES = [
+      "Déplacement professionnel", "Astreinte", "Heures supplémentaires",
+      "Prime de performance", "Frais de représentation", "Autre",
+    ];
+
+    const STATUS_LABELS = { pending: "En attente", approved: "Approuvée", rejected: "Refusée" };
+    const STATUS_COLORS = { pending: "#92600A", approved: "#2D6A0A", rejected: "#9B2020" };
+    const STATUS_BG     = { pending: "#FEF3E2", approved: "#EDFADE", rejected: "#FDEAEA" };
+
+    const C = {
+      bg: "#F5F6F8", white: "#FFFFFF", border: "#E3E6EA", text: "#1A1D23",
+      muted: "#6B7280", primary: "#2563EB", danger: "#DC2626", success: "#16A34A",
+    };
+
+    function load(key, fallback) {
+      try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+    }
+    function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+    function initUsers() {
+      const saved = load("gp_users", null);
+      if (!saved) { save("gp_users", INITIAL_USERS); return INITIAL_USERS; }
+      return saved;
+    }
+
+    const s = {
+      app:          { fontFamily: "'Inter',system-ui,sans-serif", minHeight: "100vh", background: C.bg, color: C.text },
+      nav:          { background: C.white, borderBottom: `1px solid ${C.border}`, padding: "0 2rem", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 },
+      logo:         { fontWeight: 700, fontSize: 17, color: C.text, letterSpacing: -0.5 },
+      navRight:     { display: "flex", alignItems: "center", gap: 12 },
+      main:         { maxWidth: 760, margin: "0 auto", padding: "2rem 1rem" },
+      card:         { background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, padding: "1.5rem", marginBottom: 16 },
+      cardFlat:     { background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, padding: "1.25rem", marginBottom: 12 },
+      label:        { fontSize: 13, fontWeight: 600, color: C.muted, marginBottom: 5, display: "block", textTransform: "uppercase", letterSpacing: 0.4 },
+      input:        { width: "100%", border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 14, boxSizing: "border-box", outline: "none", color: C.text, background: C.white },
+      select:       { width: "100%", border: `1px solid ${C.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 14, boxSizing: "border-box", background: C.white, color: C.text, cursor: "pointer", outline: "none" },
+      btn:          { background: C.primary, color: "#fff", border: "none", borderRadius: 8, padding: "9px 20px", fontSize: 14, cursor: "pointer", fontWeight: 600 },
+      btnOutline:   { background: "none", border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", fontSize: 13, cursor: "pointer", color: C.muted, fontWeight: 500 },
+      btnDanger:    { background: "none", border: "1px solid #FECACA", borderRadius: 7, padding: "6px 14px", fontSize: 13, cursor: "pointer", color: C.danger, fontWeight: 500 },
+      btnSuccess:   { background: C.success, color: "#fff", border: "none", borderRadius: 7, padding: "7px 16px", fontSize: 13, cursor: "pointer", fontWeight: 600 },
+      tabBar:       { display: "flex", gap: 4, marginBottom: "1.5rem", background: C.white, border: `1px solid ${C.border}`, borderRadius: 10, padding: 4 },
+      tab:          (a) => ({ flex: 1, background: a ? C.primary : "transparent", color: a ? "#fff" : C.muted, border: "none", borderRadius: 7, padding: "8px 16px", fontSize: 13, cursor: "pointer", fontWeight: a ? 600 : 400 }),
+      badge:        (st) => ({ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 12, fontWeight: 600, background: STATUS_BG[st], color: STATUS_COLORS[st] }),
+      row2:         { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 },
+      sectionTitle: { fontSize: 18, fontWeight: 700, marginBottom: "1.25rem", color: C.text },
+      meta:         { fontSize: 13, color: C.muted, marginTop: 3 },
+      divider:      { border: "none", borderTop: `1px solid ${C.border}`, margin: "16px 0" },
+      lineCard:     { background: "#F9FAFB", border: `1px solid ${C.border}`, borderRadius: 10, padding: "1rem", marginBottom: 10 },
+      errorMsg:     { color: C.danger, fontSize: 13, marginBottom: 10, fontWeight: 500 },
+      successMsg:   { color: C.success, fontSize: 13, marginBottom: 10, fontWeight: 500 },
+      notifPanel:   { position: "absolute", right: 0, top: 44, width: 320, background: C.white, border: `1px solid ${C.border}`, borderRadius: 12, boxShadow: "0 8px 30px rgba(0,0,0,0.10)", zIndex: 100, padding: 14 },
+      notifItem:    (r) => ({ padding: "10px 12px", borderRadius: 8, background: r ? "#F9FAFB" : "#EFF6FF", marginBottom: 6, fontSize: 13, color: r ? C.muted : C.text, borderLeft: r ? "3px solid transparent" : `3px solid ${C.primary}` }),
+    };
+
+    function emptyLine() {
+      return { id: Date.now() + Math.random(), startDate: "", endDate: "", primeType: "", lieu: "", comment: "" };
+    }
+
+    function App() {
+      const [users,      setUsers]      = useState(initUsers);
+      const [requests,   setRequests]   = useState(() => load("gp_requests", []));
+      const [notifs,     setNotifs]     = useState(() => load("gp_notifs",   []));
+      const [user,       setUser]       = useState(null);
+      const [page,       setPage]       = useState("login");
+      const [loginData,  setLoginData]  = useState({ email: "", password: "" });
+      const [loginErr,   setLoginErr]   = useState("");
+      const [showNotifs, setShowNotifs] = useState(false);
+      const [reg,        setReg]        = useState({ name: "", email: "", password: "", confirm: "", role: "employee" });
+      const [regErr,     setRegErr]     = useState("");
+      const [regOk,      setRegOk]      = useState("");
+      const [managerId,  setManagerId]  = useState("");
+      const [lines,      setLines]      = useState([emptyLine()]);
+      const [formErr,    setFormErr]    = useState("");
+      const [formOk,     setFormOk]     = useState("");
+
+      useEffect(() => { save("gp_users",    users);    }, [users]);
+      useEffect(() => { save("gp_requests", requests); }, [requests]);
+      useEffect(() => { save("gp_notifs",   notifs);   }, [notifs]);
+
+      const managers          = users.filter(u => u.role === "manager");
+      const myNotifs          = user ? notifs.filter(n => n.userId === user.id && !n.read) : [];
+      const myRequests        = user ? requests.filter(r => r.employeeId === user.id) : [];
+      const pendingForManager = user ? requests.filter(r => r.managerId === user.id && r.status === "pending") : [];
+      const allForManager     = user ? requests.filter(r => r.managerId === user.id) : [];
+
+      function login() {
+        const found = users.find(u => u.email.toLowerCase() === loginData.email.toLowerCase() && u.password === loginData.password);
+        if (!found) { setLoginErr("Email ou mot de passe incorrect."); return; }
+        setUser(found);
+        setPage(found.role === "manager" ? "manager" : "form");
+        setLoginErr("");
+      }
+
+      function logout() {
+        setUser(null); setPage("login");
+        setLoginData({ email: "", password: "" }); setShowNotifs(false);
+      }
+
+      function register() {
+        setRegErr("");
+        if (!reg.name || !reg.email || !reg.password || !reg.confirm) { setRegErr("Tous les champs sont obligatoires."); return; }
+        if (reg.password !== reg.confirm) { setRegErr("Les mots de passe ne correspondent pas."); return; }
+        if (reg.password.length < 4) { setRegErr("Mot de passe trop court (4 caractères min)."); return; }
+        if (users.find(u => u.email.toLowerCase() === reg.email.toLowerCase())) { setRegErr("Cet email est déjà utilisé."); return; }
+        const newUser = { id: Date.now(), name: reg.name, email: reg.email, role: reg.role, password: reg.password };
+        setUsers(prev => [...prev, newUser]);
+        setRegOk("Compte créé ! Redirection...");
+        setTimeout(() => { setPage("login"); setRegOk(""); setReg({ name: "", email: "", password: "", confirm: "", role: "employee" }); }, 1800);
+      }
+
+      function updateLine(id, field, val) { setLines(prev => prev.map(l => l.id === id ? { ...l, [field]: val } : l)); }
+      function addLine()      { setLines(prev => [...prev, emptyLine()]); }
+      function removeLine(id) { if (lines.length > 1) setLines(prev => prev.filter(l => l.id !== id)); }
+
+      function submitRequest() {
+        setFormErr("");
+        if (!managerId) { setFormErr("Veuillez sélectionner un manager."); return; }
+        for (const l of lines) {
+          if (!l.startDate || !l.endDate || !l.primeType) { setFormErr("Complétez toutes les lignes (dates + type)."); return; }
+          if (l.startDate > l.endDate) { setFormErr("Une date de fin est antérieure à la date de début."); return; }
+        }
+        const mgr = users.find(u => u.id === parseInt(managerId));
+        const newReqs = lines.map(l => ({
+          id: Date.now() + Math.random(),
+          employeeId: user.id, employeeName: user.name,
+          managerId: parseInt(managerId), managerName: mgr ? mgr.name : "",
+          startDate: l.startDate, endDate: l.endDate,
+          primeType: l.primeType, lieu: l.lieu, comment: l.comment,
+          status: "pending", createdAt: new Date().toISOString(),
+        }));
+        setRequests(prev => [...prev, ...newReqs]);
+        setNotifs(prev => [...prev, {
+          id: Date.now(), userId: parseInt(managerId),
+          message: user.name + " a soumis " + newReqs.length + " demande(s) de prime.",
+          read: false, createdAt: new Date().toISOString(),
+        }]);
+        setLines([emptyLine()]); setManagerId("");
+        setFormOk(newReqs.length + " demande(s) envoyée(s) avec succès.");
+        setTimeout(() => setFormOk(""), 3500);
+      }
+
+      function updateStatus(reqId, status) {
+        setRequests(prev => prev.map(r => r.id === reqId ? { ...r, status } : r));
+        const req = requests.find(r => r.id === reqId);
+        if (req) setNotifs(prev => [...prev, {
+          id: Date.now(), userId: req.employeeId,
+          message: 'Votre demande "' + req.primeType + '" a été ' + (status === "approved" ? "approuvée" : "refusée") + " par " + user.name + ".",
+          read: false, createdAt: new Date().toISOString(),
+        }]);
+      }
+
+      function markRead() {
+        setNotifs(prev => prev.map(n => n.userId === (user && user.id) ? { ...n, read: true } : n));
+        setShowNotifs(false);
+      }
+
+      // NavBar
+      const navbar = h("nav", { style: s.nav },
+        h("span", { style: s.logo }, "GestPrimes"),
+        user && h("div", { style: s.navRight },
+          h("div", { style: { position: "relative" } },
+            h("button", { style: { ...s.btnOutline, padding: "6px 14px" }, onClick: () => setShowNotifs(v => !v) },
+              "Notifications",
+              myNotifs.length > 0 && h("span", { style: { background: C.danger, color: "#fff", borderRadius: 10, padding: "1px 6px", fontSize: 11, marginLeft: 6, fontWeight: 700 } }, myNotifs.length)
+            ),
+            showNotifs && h("div", { style: s.notifPanel },
+              h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } },
+                h("span", { style: { fontWeight: 700, fontSize: 14 } }, "Notifications"),
+                myNotifs.length > 0 && h("button", { style: { ...s.btnOutline, padding: "4px 10px", fontSize: 12 }, onClick: markRead }, "Tout marquer lu")
+              ),
+              notifs.filter(n => n.userId === user.id).length === 0 && h("p", { style: { color: C.muted, fontSize: 13, textAlign: "center", margin: "1rem 0" } }, "Aucune notification"),
+              [...notifs.filter(n => n.userId === user.id)].reverse().slice(0, 10).map(n =>
+                h("div", { key: n.id, style: s.notifItem(n.read) },
+                  h("div", null, n.message),
+                  h("div", { style: { fontSize: 11, color: C.muted, marginTop: 3 } }, new Date(n.createdAt).toLocaleString("fr-FR"))
+                )
+              )
+            )
+          ),
+          h("span", { style: { fontSize: 13, color: C.muted, fontWeight: 500 } }, user.name),
+          h("button", { style: s.btnOutline, onClick: logout }, "Déconnexion")
+        )
+      );
+
+      // Page login
+      if (!user && page === "login") return h("div", { style: s.app },
+        navbar,
+        h("div", { style: { maxWidth: 420, margin: "3rem auto", padding: "0 1rem" } },
+          h("div", { style: s.card },
+            h("h2", { style: { fontSize: 20, fontWeight: 700, marginBottom: "1.5rem", textAlign: "center" } }, "Connexion"),
+            h("div", { style: { marginBottom: 14 } },
+              h("label", { style: s.label }, "Adresse e-mail"),
+              h("input", { style: s.input, type: "email", placeholder: "prenom.nom@entreprise.fr", value: loginData.email, onChange: e => setLoginData(p => ({ ...p, email: e.target.value })), onKeyDown: e => e.key === "Enter" && login() })
+            ),
+            h("div", { style: { marginBottom: 18 } },
+              h("label", { style: s.label }, "Mot de passe"),
+              h("input", { style: s.input, type: "password", placeholder: "••••••••", value: loginData.password, onChange: e => setLoginData(p => ({ ...p, password: e.target.value })), onKeyDown: e => e.key === "Enter" && login() })
+            ),
+            loginErr && h("p", { style: s.errorMsg }, loginErr),
+            h("button", { style: { ...s.btn, width: "100%" }, onClick: login }, "Se connecter"),
+            h("hr", { style: s.divider }),
+            h("button", { style: { ...s.btnOutline, width: "100%", textAlign: "center" }, onClick: () => { setPage("register"); setLoginErr(""); } }, "Créer un compte"),
+            h("div", { style: { marginTop: 18, padding: "12px 14px", background: "#F9FAFB", borderRadius: 8, fontSize: 12, color: C.muted, border: `1px solid ${C.border}` } },
+              h("p", { style: { margin: "0 0 6px", fontWeight: 700, color: C.text, fontSize: 13 } }, "Comptes préconfigurés"),
+              h("p", { style: { margin: "3px 0" } }, "Employé — fabien.piriou@ctengineeringgroup.com / ", h("strong", null, "Kx9#mP2q")),
+              h("p", { style: { margin: "3px 0" } }, "Employé — marie.radenac@ctengineeringgroup.com / ", h("strong", null, "Tz5!vL8n")),
+              h("p", { style: { margin: "3px 0" } }, "Employé — adrian.maguet@ctengineeringgroup.com / ", h("strong", null, "Ry3@wJ6h")),
+              h("p", { style: { margin: "3px 0" } }, "Manager — baptiste.gourret@ctengineeringgroup.com / ", h("strong", null, "1234"))
+            )
+          )
+        )
+      );
+
+      // Page register
+      if (!user && page === "register") return h("div", { style: s.app },
+        navbar,
+        h("div", { style: { maxWidth: 420, margin: "3rem auto", padding: "0 1rem" } },
+          h("div", { style: s.card },
+            h("h2", { style: { fontSize: 20, fontWeight: 700, marginBottom: "1.5rem", textAlign: "center" } }, "Créer un compte"),
+            h("div", { style: { marginBottom: 12 } },
+              h("label", { style: s.label }, "Nom complet"),
+              h("input", { style: s.input, placeholder: "Prénom Nom", value: reg.name, onChange: e => setReg(p => ({ ...p, name: e.target.value })) })
+            ),
+            h("div", { style: { marginBottom: 12 } },
+              h("label", { style: s.label }, "Adresse e-mail"),
+              h("input", { style: s.input, type: "email", placeholder: "prenom.nom@entreprise.fr", value: reg.email, onChange: e => setReg(p => ({ ...p, email: e.target.value })) })
+            ),
+            h("div", { style: { marginBottom: 12 } },
+              h("label", { style: s.label }, "Rôle"),
+              h("select", { style: s.select, value: reg.role, onChange: e => setReg(p => ({ ...p, role: e.target.value })) },
+                h("option", { value: "employee" }, "Employé"),
+                h("option", { value: "manager" }, "Manager")
+              )
+            ),
+            h("div", { style: { ...s.row2, marginBottom: 18 } },
+              h("div", null,
+                h("label", { style: s.label }, "Mot de passe"),
+                h("input", { style: s.input, type: "password", placeholder: "••••••••", value: reg.password, onChange: e => setReg(p => ({ ...p, password: e.target.value })) })
+              ),
+              h("div", null,
+                h("label", { style: s.label }, "Confirmer"),
+                h("input", { style: s.input, type: "password", placeholder: "••••••••", value: reg.confirm, onChange: e => setReg(p => ({ ...p, confirm: e.target.value })) })
+              )
+            ),
+            regErr && h("p", { style: s.errorMsg }, regErr),
+            regOk  && h("p", { style: s.successMsg }, regOk),
+            h("button", { style: { ...s.btn, width: "100%" }, onClick: register }, "Créer le compte"),
+            h("hr", { style: s.divider }),
+            h("button", { style: { ...s.btnOutline, width: "100%", textAlign: "center" }, onClick: () => { setPage("login"); setRegErr(""); setRegOk(""); } }, "Retour à la connexion")
+          )
+        )
+      );
+
+      // Page principale (employé ou manager)
+      return h("div", { style: s.app },
+        navbar,
+        h("div", { style: s.main },
+
+          // VUE EMPLOYÉ
+          user && user.role === "employee" && h(Fragment, null,
+            h("div", { style: s.tabBar },
+              h("button", { style: s.tab(page === "form"),    onClick: () => setPage("form") }, "Nouvelle demande"),
+              h("button", { style: s.tab(page === "history"), onClick: () => setPage("history") }, "Mes demandes" + (myRequests.length > 0 ? " (" + myRequests.length + ")" : ""))
+            ),
+
+            page === "form" && h("div", null,
+              h("h2", { style: s.sectionTitle }, "Soumettre une demande de prime"),
+              h("div", { style: s.card },
+                h("div", { style: { marginBottom: 20 } },
+                  h("label", { style: s.label }, "Manager valideur *"),
+                  h("select", { style: s.select, value: managerId, onChange: e => setManagerId(e.target.value) },
+                    h("option", { value: "" }, "Sélectionner un manager"),
+                    ...managers.map(m => h("option", { key: m.id, value: m.id }, m.name))
+                  )
+                ),
+                h("hr", { style: s.divider }),
+                h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } },
+                  h("span", { style: { fontWeight: 600, fontSize: 14 } }, "Périodes de prime (" + lines.length + ")")
+                ),
+                ...lines.map((l, i) =>
+                  h("div", { key: l.id, style: s.lineCard },
+                    h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 } },
+                      h("span", { style: { fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: 0.5 } }, "Ligne " + (i + 1)),
+                      lines.length > 1 && h("button", { style: { background: "none", border: "none", cursor: "pointer", color: C.danger, fontSize: 18, lineHeight: 1, padding: "0 4px" }, onClick: () => removeLine(l.id) }, "×")
+                    ),
+                    h("div", { style: { ...s.row2, marginBottom: 10 } },
+                      h("div", null,
+                        h("label", { style: s.label }, "Date de début *"),
+                        h("input", { style: s.input, type: "date", value: l.startDate, onChange: e => updateLine(l.id, "startDate", e.target.value) })
+                      ),
+                      h("div", null,
+                        h("label", { style: s.label }, "Date de fin *"),
+                        h("input", { style: s.input, type: "date", value: l.endDate, onChange: e => updateLine(l.id, "endDate", e.target.value) })
+                      )
+                    ),
+                    h("div", { style: { marginBottom: 10 } },
+                      h("label", { style: s.label }, "Type de prime *"),
+                      h("select", { style: s.select, value: l.primeType, onChange: e => updateLine(l.id, "primeType", e.target.value) },
+                        h("option", { value: "" }, "Sélectionner un type"),
+                        ...PRIME_TYPES.map(t => h("option", { key: t, value: t }, t))
+                      )
+                    ),
+                    h("div", { style: s.row2 },
+                      h("div", null,
+                        h("label", { style: s.label }, "Lieu (optionnel)"),
+                        h("input", { style: s.input, type: "text", placeholder: "Ex: Paris, Lyon...", value: l.lieu, onChange: e => updateLine(l.id, "lieu", e.target.value) })
+                      ),
+                      h("div", null,
+                        h("label", { style: s.label }, "Commentaire (optionnel)"),
+                        h("input", { style: s.input, type: "text", placeholder: "Détails...", value: l.comment, onChange: e => updateLine(l.id, "comment", e.target.value) })
+                      )
+                    )
+                  )
+                ),
+                h("button", { style: { ...s.btnOutline, width: "100%", marginBottom: 16, marginTop: 4, padding: "9px" }, onClick: addLine }, "+ Ajouter une ligne"),
+                formErr && h("p", { style: s.errorMsg }, formErr),
+                formOk  && h("p", { style: s.successMsg }, formOk),
+                h("button", { style: { ...s.btn, padding: "10px 28px" }, onClick: submitRequest }, "Envoyer la demande")
+              )
+            ),
+
+            page === "history" && h("div", null,
+              h("h2", { style: s.sectionTitle }, "Mes demandes"),
+              myRequests.length === 0 && h("p", { style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande pour l'instant."),
+              ...[...myRequests].reverse().map(r =>
+                h("div", { key: r.id, style: s.cardFlat },
+                  h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } },
+                    h("div", null,
+                      h("span", { style: { fontWeight: 600, fontSize: 15 } }, r.primeType),
+                      h("p", { style: s.meta }, r.startDate + " — " + r.endDate + (r.lieu ? " · " + r.lieu : ""))
+                    ),
+                    h("span", { style: s.badge(r.status) }, STATUS_LABELS[r.status])
+                  ),
+                  h("p", { style: s.meta }, "Manager : " + r.managerName),
+                  r.comment && h("p", { style: s.meta }, '"' + r.comment + '"'),
+                  h("p", { style: { ...s.meta, marginTop: 6 } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR"))
+                )
+              )
+            )
+          ),
+
+          // VUE MANAGER
+          user && user.role === "manager" && h(Fragment, null,
+            h("div", { style: s.tabBar },
+              h("button", { style: s.tab(page === "manager"),         onClick: () => setPage("manager") }, "À valider" + (pendingForManager.length > 0 ? " (" + pendingForManager.length + ")" : "")),
+              h("button", { style: s.tab(page === "manager-history"), onClick: () => setPage("manager-history") }, "Historique")
+            ),
+
+            page === "manager" && h("div", null,
+              h("h2", { style: s.sectionTitle }, "Demandes à valider"),
+              pendingForManager.length === 0 && h("p", { style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande en attente."),
+              ...pendingForManager.map(r =>
+                h("div", { key: r.id, style: s.cardFlat },
+                  h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 } },
+                    h("div", null,
+                      h("span", { style: { fontWeight: 600, fontSize: 15 } }, r.primeType),
+                      h("p", { style: s.meta }, r.employeeName)
+                    ),
+                    h("span", { style: s.badge("pending") }, "En attente")
+                  ),
+                  h("p", { style: s.meta }, r.startDate + " — " + r.endDate + (r.lieu ? " · " + r.lieu : "")),
+                  r.comment && h("p", { style: s.meta }, '"' + r.comment + '"'),
+                  h("div", { style: { display: "flex", gap: 8, marginTop: 14 } },
+                    h("button", { style: s.btnSuccess, onClick: () => updateStatus(r.id, "approved") }, "Approuver"),
+                    h("button", { style: s.btnDanger,  onClick: () => updateStatus(r.id, "rejected") }, "Refuser")
+                  )
+                )
+              )
+            ),
+
+            page === "manager-history" && h("div", null,
+              h("h2", { style: s.sectionTitle }, "Historique"),
+              allForManager.length === 0 && h("p", { style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande reçue."),
+              ...[...allForManager].reverse().map(r =>
+                h("div", { key: r.id, style: s.cardFlat },
+                  h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } },
+                    h("div", null,
+                      h("span", { style: { fontWeight: 600, fontSize: 15 } }, r.primeType),
+                      h("p", { style: s.meta }, r.employeeName)
+                    ),
+                    h("span", { style: s.badge(r.status) }, STATUS_LABELS[r.status])
+                  ),
+                  h("p", { style: s.meta }, r.startDate + " — " + r.endDate + (r.lieu ? " · " + r.lieu : "")),
+                  r.comment && h("p", { style: s.meta }, '"' + r.comment + '"'),
+                  h("p", { style: { ...s.meta, marginTop: 6 } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR"))
+                )
+              )
+            )
+          )
+        )
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+  </script>
+</body>
+</html>
