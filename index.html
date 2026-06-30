@@ -6,6 +6,7 @@
   <title>GestPrimes</title>
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', system-ui, sans-serif; background: #F8FAFC; color: #0F172A; }
@@ -43,15 +44,49 @@
     }
 
     const INITIAL_USERS = [
-      { id: 1, name: "Fabien Piriou",    email: "fabien.piriou@ctengineeringgroup.com",   role: "manager",  password: "Kx9#mP2q" },
-      { id: 2, name: "Marie Radenac",    email: "marie.radenac@ctengineeringgroup.com",   role: "employee", password: "Tz5!vL8n" },
-      { id: 3, name: "Adrian Maguet",    email: "adrian.maguet@ctengineeringgroup.com",   role: "employee", password: "Ry3@wJ6h" },
-      { id: 4, name: "Baptiste Gourret", email: "baptiste.gourret@ctengineeringgroup.com",role: "manager",  password: "1234" },
+      { id: 1,  name: "Valentin Jaffrès",       email: "valentin.jaffres@ctengineeringgroup.com",            role: "employee", password: "Jf4#nQ8w", matricule: "EM103624" },
+      { id: 2,  name: "Denis Juhel",            email: "denis.juhel@ctengineeringgroup.com",                 role: "employee", password: "Jh7$rT2k", matricule: "EM103982" },
+      { id: 3,  name: "Maël Jolivet",           email: "mael.jolivet@ctengineeringgroup.com",                role: "employee", password: "Jl9@vX3m", matricule: "EM103983" },
+      { id: 4,  name: "Olivier Mousselon",      email: "olivier.mousselon@ctengineeringgroup.com",           role: "employee", password: "Ms2!pL6h", matricule: "EM103985" },
+      { id: 5,  name: "Adrian Maguet",          email: "adrian.maguet@ctengineeringgroup.com",               role: "manager",  password: "Ry3@wJ6h", matricule: "EM103986" },
+      { id: 6,  name: "Amandine Cheineau",      email: "amandine.cheineau@ctengineeringgroup.com",           role: "employee", password: "Ch5#dF9q", matricule: "EM103988" },
+      { id: 7,  name: "Juliette Esnault",       email: "juliette.esnault@ctengineeringgroup.com",            role: "employee", password: "Es8!nB4x", matricule: "EM104022" },
+      { id: 8,  name: "Mathieu Duchesne",       email: "mathieu.duchesne@ctengineeringgroup.com",            role: "employee", password: "Du6$mK1z", matricule: "EM104087" },
+      { id: 9,  name: "Ludovic Pajot",          email: "ludovic.pajot@ctengineeringgroup.com",               role: "employee", password: "Pj3@tR7w", matricule: "EM104101" },
+      { id: 10, name: "Benoit Mouet",           email: "benoit.mouet@ctengineeringgroup.com",                role: "employee", password: "Mo9#eW2v", matricule: "EM104447" },
+      { id: 11, name: "Yanouk Gautier",         email: "Yanouk.gautier@ctengineeringgroup.com",              role: "employee", password: "Ga4!tY8n", matricule: "EM104460" },
+      { id: 12, name: "Maxime Limelette",       email: "maxime.limelette@ctengineeringgroup.com",            role: "employee", password: "Li7$mP5k", matricule: "EM104569" },
+      { id: 13, name: "Ewan Redou",             email: "ewan.redou@ctengineeringgroup.com",                  role: "employee", password: "Re2#dQ9x", matricule: "EM104656" },
+      { id: 14, name: "Fabien Piriou",          email: "fabien.piriou@ctengineeringgroup.com",               role: "manager",  password: "Kx9#mP2q", matricule: "EM104680" },
+      { id: 15, name: "Matéo Raphalen",         email: "mateo.raphalen@ctengineeringgroup.com",              role: "employee", password: "Ra6!fL3w", matricule: "EM104737" },
+      { id: 16, name: "Marie Berlizot",         email: "marie.berlizot@ctengineeringgroup.com",              role: "employee", password: "Be8$vN4h", matricule: "EM104766" },
+      { id: 17, name: "Philippe Milhaud",       email: "philippe.milhaud@ctengineeringgroup.com",            role: "employee", password: "Mi3#qX7z", matricule: "EM104810" },
+      { id: 18, name: "Sylvain Bony",           email: "sylvain.bony@ctengineeringgroup.com",                role: "employee", password: "Bo5!rT9k", matricule: "EM104833" },
+      { id: 19, name: "Valérie Kergoat",        email: "valerie.kergoat.external@ctengineeringgroup.com",    role: "manager",  password: "Vk7$pN3x", matricule: "EM105011", hiddenFromSelect: true },
+      { id: 20, name: "Guillaume Bridon",       email: "guillaume.bridon@ctengineeringgroup.com",            role: "employee", password: "Br4@wK2m", matricule: "EM105573" },
+      { id: 21, name: "Anthony Bourdin",        email: "anthony.bourdin@ctengineeringgroup.com",             role: "employee", password: "Bd9#fQ6v", matricule: "EM105606" },
+      { id: 22, name: "Hugo Martin",            email: "hugo.martin@ctengineeringgroup.com",                 role: "employee", password: "Ma2!nX8h", matricule: "EM106010" },
+      { id: 23, name: "Lucas Le Bihan",         email: "lucas.lebihan@ctengineeringgroup.com",               role: "employee", password: "Lb6$tY3w", matricule: "EM106046" },
+      { id: 24, name: "Michael Roy-Bouchard",   email: "michael.roybouchard@ctengineeringgroup.com",         role: "employee", password: "Rb8!dP5k", matricule: "EM106154" },
+      { id: 25, name: "Luc Tourrilhes",         email: "luc.tourrilhes@ctengineeringgroup.com",              role: "employee", password: "To3#mR9z", matricule: "EM106194" },
+      { id: 26, name: "Jean-François Vassard",  email: "jeanfrançois.vassard@ctengineeringgroup.com",        role: "employee", password: "Va7@qL4x", matricule: "EM106608" },
+      { id: 27, name: "Sylvain Pelras",         email: "sylvain.pelras@ctengineeringgroup.com",              role: "employee", password: "Pe5!vN2w", matricule: "EM106689" },
+      { id: 28, name: "Baptiste Gourret",       email: "baptiste.gourret@ctengineeringgroup.com",            role: "employee", password: "1234",     matricule: "EM106734" },
+      { id: 29, name: "Dominique Ansquer",      email: "dominique.ansquer@ctengineeringgroup.com",           role: "employee", password: "An9#hK6m", matricule: "EM106735" },
+      { id: 30, name: "Evan Messin",            email: "evan.messin@ctengineeringgroup.com",                 role: "employee", password: "Me4!rT8q", matricule: "EM106736" },
+      { id: 31, name: "Jean-Edern David",       email: "jeanedern.david@ctengineeringgroup.com",             role: "employee", password: "Da6$wX3v", matricule: "EM106793" },
+      { id: 32, name: "Marie Radenac",          email: "marie.radenac@ctengineeringgroup.com",               role: "manager",  password: "Tz5!vL8n", matricule: "EM106893" },
+      { id: 33, name: "Lucie Joret",            email: "lucie.joret@ctengineeringgroup.com",                 role: "employee", password: "Jo2#nP7h", matricule: "EM106909" },
+      { id: 34, name: "Kevin Le Moigne",        email: "kevin.lemoigne@ctengineeringgroup.com",              role: "employee", password: "Lm8@fQ4k", matricule: "EM106985" },
+      { id: 35, name: "Benoit Gambillon",       email: "benoit.gambillon@ctengineeringgroup.com",            role: "employee", password: "Ga3!tR9w", matricule: "EM107006" },
+      { id: 36, name: "Kevin Gadret",           email: "kevin.gadret@ctengineeringgroup.com",                role: "employee", password: "Gd7#mX2z", matricule: "EM107034" },
+      { id: 37, name: "Thomas-François Jacquet",email: "thomasfrançois.jacquet@ctengineeringgroup.com",      role: "employee", password: "Ja5$vK6h", matricule: "EM107116" },
+      { id: 38, name: "Jessy Rousseau",         email: "jessy.rousseau@ctengineeringgroup.com",              role: "employee", password: "Ro9!dN3w", matricule: "EM107136" },
+      { id: 39, name: "Ewen Le Houerou",        email: "ewen.le@ctengineeringgroup.com",                     role: "employee", password: "Lh4#qP8v", matricule: "EM107159" },
     ];
 
     const PRIME_TYPES = [
-      "Déplacement professionnel","Astreinte","Heures supplémentaires",
-      "Prime de performance","Frais de représentation","Autre",
+      "Prime de déplacement (25€)","Prime d'éloignement (35€)","Prime bureau/domicile"
     ];
 
     const STATUS_LABELS = { pending: "En attente", approved: "Approuvée", rejected: "Refusée" };
@@ -92,7 +127,7 @@
       const [loginData,  setLoginData]  = useState({ email: "", password: "" });
       const [loginErr,   setLoginErr]   = useState("");
       const [showNotifs, setShowNotifs] = useState(false);
-      const [reg,        setReg]        = useState({ name: "", email: "", password: "", confirm: "", role: "employee" });
+      const [reg,        setReg]        = useState({ name: "", email: "", password: "", confirm: "", role: "employee", matricule: "" });
       const [regErr,     setRegErr]     = useState("");
       const [regOk,      setRegOk]      = useState("");
       const [managerId,  setManagerId]  = useState("");
@@ -101,6 +136,8 @@
       const [formOk,     setFormOk]     = useState("");
       const [loading,    setLoading]    = useState(true);
       const [syncing,    setSyncing]    = useState(false);
+      const [showExportModal, setShowExportModal] = useState(false);
+      const [exportRange,     setExportRange]     = useState({ from: "", to: "" });
 
       const loadAll = useCallback(async () => {
         try {
@@ -143,7 +180,48 @@
         alert("Comptes réinitialisés !");
       }
 
-      const managers          = users.filter(u => u.role === "manager");
+      async function clearRequests() {
+        await Promise.all([fsSet("meta", "requests", []), fsSet("meta", "notifs", [])]);
+        setRequests([]); setNotifs([]);
+        alert("Toutes les demandes et notifications ont été supprimées !");
+      }
+
+      function normName(s) {
+        return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z]/g, "");
+      }
+
+      async function migrateRequests() {
+        const freshUsers = await fsGet("meta", "users");
+        const pool = Array.isArray(freshUsers) && freshUsers.length > 0 ? freshUsers : users;
+        const byName = {};
+        pool.forEach(u => { byName[normName(u.name)] = u; });
+
+        let fixed = 0, missing = [];
+        const updatedReqs = requests.map(r => {
+          const empMatch = byName[normName(r.employeeName)];
+          const mgrMatch = byName[normName(r.managerName)];
+          if (!empMatch) missing.push(r.employeeName);
+          if (!mgrMatch) missing.push(r.managerName);
+          if (!empMatch || !mgrMatch) return r;
+          fixed++;
+          return { ...r, employeeId: empMatch.id, managerId: mgrMatch.id };
+        });
+
+        const updatedNotifs = notifs.map(n => {
+          // Les notifs n'ont pas de nom stocké, on les laisse si on ne peut pas les rattacher avec certitude
+          return n;
+        });
+
+        await fsSet("meta", "requests", updatedReqs);
+        setRequests(updatedReqs);
+        const uniqMissing = [...new Set(missing)];
+        alert(
+          fixed + " demande(s) migrée(s) avec succès." +
+          (uniqMissing.length ? "\n\nNoms non trouvés (vérifiez l'orthographe) : " + uniqMissing.join(", ") : "")
+        );
+      }
+
+      const managers          = users.filter(u => u.role === "manager" && !u.hiddenFromSelect);
       const myNotifs          = user ? notifs.filter(n => n.userId === user.id && !n.read) : [];
       const myRequests        = user ? requests.filter(r => r.employeeId === user.id) : [];
       const pendingForManager = user ? requests.filter(r => r.managerId === user.id && r.status === "pending") : [];
@@ -164,16 +242,16 @@
 
       async function register() {
         setRegErr("");
-        if (!reg.name || !reg.email || !reg.password || !reg.confirm) { setRegErr("Tous les champs sont obligatoires."); return; }
+        if (!reg.name || !reg.email || !reg.password || !reg.confirm || !reg.matricule) { setRegErr("Tous les champs sont obligatoires."); return; }
         if (reg.password !== reg.confirm) { setRegErr("Les mots de passe ne correspondent pas."); return; }
         if (reg.password.length < 4) { setRegErr("Mot de passe trop court."); return; }
         if (users.find(u => u.email.toLowerCase() === reg.email.toLowerCase())) { setRegErr("Cet email est déjà utilisé."); return; }
-        const newUser   = { id: Date.now(), name: reg.name, email: reg.email, role: reg.role, password: reg.password };
+        const newUser   = { id: Date.now(), name: reg.name, email: reg.email, role: reg.role, password: reg.password, matricule: reg.matricule };
         const updated   = [...users, newUser];
         await fsSet("meta", "users", updated);
         setUsers(updated);
-        setRegOk("Compte créé ! Vous pouvez vous connecter.");
-        setTimeout(() => { setPage("login"); setRegOk(""); setReg({ name: "", email: "", password: "", confirm: "", role: "employee" }); }, 1800);
+        setRegOk("Compte créé avec succès !");
+        setTimeout(() => { setPage("manager"); setRegOk(""); setReg({ name: "", email: "", password: "", confirm: "", role: "employee", matricule: "" }); }, 1800);
       }
 
       function updateLine(id, f, v) { setLines(p => p.map(l => l.id === id ? { ...l, [f]: v } : l)); }
@@ -184,7 +262,7 @@
         setFormErr("");
         if (!managerId) { setFormErr("Veuillez sélectionner un manager."); return; }
         for (const l of lines) {
-          if (!l.startDate || !l.endDate || !l.primeType) { setFormErr("Veuillez compléter toutes les lignes."); return; }
+          if (!l.startDate || !l.endDate || !l.primeType || !l.lieu) { setFormErr("Veuillez compléter toutes les lignes (lieu obligatoire)."); return; }
           if (l.startDate > l.endDate) { setFormErr("Date de fin antérieure à la date de début."); return; }
         }
         const mgr = users.find(u => u.id === parseInt(managerId));
@@ -216,6 +294,200 @@
         setRequests(updatedReqs); setNotifs(updatedNotifs);
       }
 
+      async function exportExcel(from, to) {
+        const STATUS_FR = { pending: "En attente", approved: "Approuvée", rejected: "Refusée" };
+        const BG = { approved: "C6EFCE", pending: "FFEB9C", rejected: "FFC7CE" };
+        const FG = { approved: "276221", pending: "9C5700", rejected: "9C0006" };
+        const TARIFS = { "Prime de déplacement": 25, "Prime d'éloignement": 35 };
+
+        // Retire le "(25€)" etc. du libellé pour l'affichage Excel
+        function cleanType(t) {
+          return (t || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+        }
+
+        // Déterminer le mois de référence (règle : début <= 18 = mois en cours, >= 19 = mois suivant)
+        function getMoisRef(startDate) {
+          const d = new Date(startDate);
+          if (d.getDate() >= 19) return new Date(d.getFullYear(), d.getMonth() + 1, 1);
+          return new Date(d.getFullYear(), d.getMonth(), 1);
+        }
+
+        // Nombre de jours ouvrés (lun-ven) entre deux dates incluses
+        function nbJoursOuvres(r) {
+          const d1 = new Date(r.startDate);
+          const d2 = new Date(r.endDate);
+          let count = 0;
+          const cur = new Date(d1);
+          while (cur <= d2) {
+            const day = cur.getDay();
+            if (day !== 0 && day !== 6) count++;
+            cur.setDate(cur.getDate() + 1);
+          }
+          return count;
+        }
+
+        const fromDate = from ? new Date(from) : null;
+        const toDate   = to   ? new Date(to)   : null;
+
+        // Filtre Feuille 2 : date de début brute entre les 2 bornes choisies
+        function inRange(r) {
+          const d = new Date(r.startDate);
+          if (fromDate && d < fromDate) return false;
+          if (toDate   && d > toDate)   return false;
+          return true;
+        }
+
+        const wb = new ExcelJS.Workbook();
+
+        // ── Feuille 1 : toutes les demandes ──────────────────────────
+        const ws1 = wb.addWorksheet("Toutes les demandes");
+        ws1.columns = [
+          { header: "Nom",            key: "nom",     width: 18 },
+          { header: "Prénom",         key: "prenom",  width: 16 },
+          { header: "Date début",     key: "deb",     width: 14 },
+          { header: "Date fin",       key: "fin",     width: 14 },
+          { header: "Type de prime",  key: "type",    width: 24 },
+          { header: "Jours ouvrés",   key: "jours",   width: 13 },
+          { header: "Prix unitaire",  key: "prix",    width: 13 },
+          { header: "Lieu",           key: "lieu",    width: 18 },
+          { header: "Commentaire",    key: "comment", width: 26 },
+          { header: "Statut",         key: "statut",  width: 14 },
+        ];
+        ws1.getRow(1).eachCell(cell => {
+          cell.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+          cell.font      = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+        });
+        ws1.getRow(1).height = 22;
+
+        // Feuille 1 : historique complet, sans filtre de dates
+        const allReqs = [...requests].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        allReqs.forEach(r => {
+          const parts  = (r.employeeName || "").trim().split(" ");
+          const prenom = parts[0] || "";
+          const nom    = parts.slice(1).join(" ") || "";
+          const bg      = "FF" + (BG[r.status] || BG.pending);
+          const fg      = "FF" + (FG[r.status] || FG.pending);
+          const typeNom = cleanType(r.primeType);
+          const prix    = TARIFS[typeNom] || "";
+          const row = ws1.addRow({
+            nom, prenom,
+            deb: r.startDate || "", fin: r.endDate || "",
+            type: typeNom,
+            jours: nbJoursOuvres(r),
+            prix: prix ? prix + " €" : "",
+            lieu: r.lieu || "", comment: r.comment || "",
+            statut: STATUS_FR[r.status] || "",
+          });
+          row.eachCell(cell => {
+            cell.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
+            cell.font      = { color: { argb: fg }, size: 11 };
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+          });
+          row.height = 18;
+        });
+
+        // ── Feuille 2 : récap par employé (montants en €) ────────────
+        const ws2 = wb.addWorksheet("Récap mensuel");
+
+        const approvedReqs = requests.filter(r => r.status === "approved" && inRange(r));
+
+        const moisSet = new Set();
+        approvedReqs.forEach(r => {
+          const m = getMoisRef(r.startDate);
+          moisSet.add(m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0"));
+        });
+        const moisList = [...moisSet].sort();
+
+        const colsFixes = [
+          { header: "Nom",       key: "nom",    width: 18 },
+          { header: "Prénom",    key: "prenom", width: 16 },
+          { header: "Matricule", key: "mat",    width: 12 },
+        ];
+
+        const typeKeys = ["Prime de déplacement", "Prime d'éloignement", "Prime bureau/domicile"];
+        const moisLabels = { "01":"Janvier","02":"Février","03":"Mars","04":"Avril","05":"Mai","06":"Juin","07":"Juillet","08":"Août","09":"Septembre","10":"Octobre","11":"Novembre","12":"Décembre" };
+
+        const colsDyn = [];
+        moisList.forEach(m => {
+          const [yr, mo] = m.split("-");
+          const label = moisLabels[mo] + " " + yr;
+          typeKeys.forEach(t => {
+            colsDyn.push({ header: label + "\n" + t, key: m + "_" + t, width: 18 });
+          });
+          colsDyn.push({ header: label + "\nTotal €", key: m + "_total", width: 14 });
+        });
+
+        ws2.columns = [...colsFixes, ...colsDyn];
+
+        ws2.getRow(1).height = 40;
+        ws2.getRow(1).eachCell(cell => {
+          cell.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
+          cell.font      = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
+          cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        });
+
+        // Regrouper par employé : montant € = tarif × jours ouvrés
+        const empMap = {};
+        // Initialiser avec tous les employés, même sans demande
+        users.forEach(u => {
+          const parts = (u.name || "").trim().split(" ");
+          empMap[u.id] = { nom: parts.slice(1).join(" ") || "", prenom: parts[0] || "", mat: u.matricule || "", totals: {} };
+        });
+        approvedReqs.forEach(r => {
+          const key = r.employeeId;
+          if (!empMap[key]) {
+            const emp = users.find(u => u.id === r.employeeId) || {};
+            const parts = (r.employeeName || "").trim().split(" ");
+            empMap[key] = { nom: parts.slice(1).join(" ") || "", prenom: parts[0] || "", mat: emp.matricule || "", totals: {} };
+          }
+          const m = getMoisRef(r.startDate);
+          const mKey = m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0");
+          const typeNomR = cleanType(r.primeType);
+          const colKey = mKey + "_" + typeNomR;
+          const montant = (TARIFS[typeNomR] || 0) * nbJoursOuvres(r);
+          empMap[key].totals[colKey] = (empMap[key].totals[colKey] || 0) + montant;
+        });
+
+        const empList = Object.values(empMap).sort((a, b) => a.nom.localeCompare(b.nom));
+
+        empList.forEach(emp => {
+          const rowData = { nom: emp.nom, prenom: emp.prenom, mat: emp.mat };
+          moisList.forEach(m => {
+            let totalMois = 0;
+            typeKeys.forEach(t => {
+              const v = emp.totals[m + "_" + t] || 0;
+              rowData[m + "_" + t] = v > 0 ? v + " €" : "";
+              totalMois += v;
+            });
+            rowData[m + "_total"] = totalMois > 0 ? totalMois + " €" : "";
+          });
+          const row = ws2.addRow(rowData);
+          row.height = 18;
+          row.eachCell(cell => {
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.font = { size: 11 };
+          });
+          row.getCell("nom").alignment    = { horizontal: "left", vertical: "middle" };
+          row.getCell("prenom").alignment = { horizontal: "left", vertical: "middle" };
+          moisList.forEach(m => {
+            const c = row.getCell(m + "_total");
+            if (c.value) c.font = { bold: true, size: 11 };
+          });
+        });
+
+        // Téléchargement
+        const buffer = await wb.xlsx.writeBuffer();
+        const blob   = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const url    = URL.createObjectURL(blob);
+        const a      = document.createElement("a");
+        const date   = new Date().toLocaleDateString("fr-FR").replace(/\//g, "-");
+        a.href       = url;
+        a.download   = "GestPrimes_" + date + ".xlsx";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+
       async function markRead() {
         const updated = notifs.map(n => n.userId === (user && user.id) ? { ...n, read: true } : n);
         await fsSet("meta", "notifs", updated);
@@ -240,6 +512,11 @@
           h("button", { onClick: syncAll, style: { background: C.surface, border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 12, cursor: "pointer", color: C.muted } },
             syncing ? "Actualisation…" : "Actualiser"
           ),
+          user.role === "manager" && h("button", { onClick: () => setPage("register"), style: { background: C.surface, border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Créer un compte"),
+          user.role === "manager" && h("button", { onClick: () => setShowExportModal(true), style: { background: "#16A34A", border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 12, cursor: "pointer", color: "#fff", fontWeight: 600 } }, "⬇ Exporter Excel"),
+          user.email === "baptiste.gourret@ctengineeringgroup.com" && h("button", { onClick: () => { if (confirm("Écraser tous les comptes par la liste par défaut ? Cette action ne peut pas être annulée.")) resetUsers(); }, style: { background: "none", border: "1px solid #FECACA", borderRadius: 7, padding: "6px 12px", fontSize: 12, cursor: "pointer", color: C.danger } }, "Réinit. comptes"),
+          user.email === "baptiste.gourret@ctengineeringgroup.com" && h("button", { onClick: migrateRequests, style: { background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 12px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Migrer demandes"),
+          user.email === "baptiste.gourret@ctengineeringgroup.com" && h("button", { onClick: () => { if (confirm("Supprimer définitivement TOUTES les demandes et notifications ? Cette action ne peut pas être annulée.")) clearRequests(); }, style: { background: "none", border: "1px solid #FECACA", borderRadius: 7, padding: "6px 12px", fontSize: 12, cursor: "pointer", color: C.danger } }, "Vider demandes"),
           h("div", { style: { position: "relative" } },
             h("button", { onClick: () => setShowNotifs(v => !v), style: { background: C.surface, border: "none", borderRadius: 7, padding: "6px 12px", fontSize: 12, cursor: "pointer", color: C.muted, position: "relative" } },
               "Notifications",
@@ -280,7 +557,7 @@
       }
 
       // Page login
-      if (!user && page === "login") return h("div", { style: { minHeight: "100vh", background: C.bg } },
+      if (page === "login") return h("div", { style: { minHeight: "100vh", background: C.bg } },
         navbar,
         h("div", { style: { maxWidth: 420, margin: "3rem auto", padding: "0 1rem" } },
           h("div", { style: { background: C.white, border: "1px solid " + C.border, borderRadius: 12, padding: "1.5rem" } },
@@ -295,32 +572,18 @@
               h("input", { style: inp, type: "password", placeholder: "••••••••", value: loginData.password, onChange: e => setLoginData(p => ({ ...p, password: e.target.value })), onKeyDown: e => e.key === "Enter" && login() })
             ),
             loginErr && h("p", { style: { color: C.danger, fontSize: 13, marginBottom: 12, fontWeight: 500 } }, loginErr),
-            h("button", { onClick: login, style: { width: "100%", background: C.primary, color: "#fff", border: "none", borderRadius: 8, padding: 11, fontSize: 14, cursor: "pointer", fontWeight: 600 } }, "Se connecter"),
-            h("div", { style: { display: "flex", alignItems: "center", gap: 10, margin: "16px 0" } },
-              h("div", { style: { flex: 1, height: 1, background: C.border } }),
-              h("span", { style: { fontSize: 12, color: C.subtle } }, "ou"),
-              h("div", { style: { flex: 1, height: 1, background: C.border } })
-            ),
-            h("button", { onClick: () => { setPage("register"); setLoginErr(""); }, style: { width: "100%", background: "none", border: "1.5px solid " + C.border, borderRadius: 8, padding: 10, fontSize: 14, cursor: "pointer", color: C.text, fontWeight: 500 } }, "Créer un compte"),
-            h("div", { style: { marginTop: 20, padding: 14, background: C.surface, borderRadius: 9, fontSize: 12, color: C.muted, border: "1px solid " + C.border } },
-              h("p", { style: { margin: "0 0 8px", fontWeight: 700, color: C.text, fontSize: 12 } }, "Comptes préconfigurés"),
-              h("p", { style: { margin: "3px 0" } }, "Manager — fabien.piriou@ctengineeringgroup.com / ", h("strong", null, "Kx9#mP2q")),
-              h("p", { style: { margin: "3px 0" } }, "Employé — marie.radenac@ctengineeringgroup.com / ", h("strong", null, "Tz5!vL8n")),
-              h("p", { style: { margin: "3px 0" } }, "Employé — adrian.maguet@ctengineeringgroup.com / ", h("strong", null, "Ry3@wJ6h")),
-              h("p", { style: { margin: "3px 0" } }, "Manager — baptiste.gourret@ctengineeringgroup.com / ", h("strong", null, "1234")),
-              h("button", { onClick: resetUsers, style: { marginTop: 10, background: "none", border: "1px solid " + C.border, borderRadius: 6, padding: "4px 10px", fontSize: 11, cursor: "pointer", color: C.muted } }, "Réinitialiser les comptes")
-            )
+            h("button", { onClick: login, style: { width: "100%", background: C.primary, color: "#fff", border: "none", borderRadius: 8, padding: 11, fontSize: 14, cursor: "pointer", fontWeight: 600 } }, "Se connecter")
           )
         )
       );
 
-      // Page register
-      if (!user && page === "register") return h("div", { style: { minHeight: "100vh", background: C.bg } },
+      // Page register (accessible uniquement aux managers connectés)
+      if (page === "register") return h("div", { style: { minHeight: "100vh", background: C.bg } },
         navbar,
         h("div", { style: { maxWidth: 420, margin: "3rem auto", padding: "0 1rem" } },
           h("div", { style: { background: C.white, border: "1px solid " + C.border, borderRadius: 12, padding: "1.5rem" } },
             h("h2", { style: { fontSize: 20, fontWeight: 700, marginBottom: "1.5rem", textAlign: "center" } }, "Créer un compte"),
-            ...[["name","Nom complet","text","Prénom Nom"],["email","Adresse e-mail","email","prenom.nom@entreprise.fr"],["password","Mot de passe","password","••••••••"],["confirm","Confirmer","password","••••••••"]].map(([f,lbl,t,ph]) =>
+            ...[["name","Nom complet","text","Prénom Nom"],["email","Adresse e-mail","email","prenom.nom@entreprise.fr"],["matricule","Matricule","text","Ex : EM106734"],["password","Mot de passe","password","••••••••"],["confirm","Confirmer","password","••••••••"]].map(([f,lbl,t,ph]) =>
               h("div", { key: f, style: { marginBottom: 13 } },
                 h(Label, null, lbl),
                 h("input", { style: inp, type: t, placeholder: ph, value: reg[f], onChange: e => setReg(p => ({ ...p, [f]: e.target.value })) })
@@ -337,13 +600,45 @@
             regOk  && h("p", { style: { color: C.success, fontSize: 13, marginBottom: 12, fontWeight: 500 } }, regOk),
             h("button", { onClick: register, style: { width: "100%", background: C.primary, color: "#fff", border: "none", borderRadius: 8, padding: 11, fontSize: 14, cursor: "pointer", fontWeight: 600 } }, "Créer le compte"),
             h("div", { style: { height: 1, background: C.border, margin: "16px 0" } }),
-            h("button", { onClick: () => { setPage("login"); setRegErr(""); setRegOk(""); }, style: { width: "100%", background: "none", border: "1.5px solid " + C.border, borderRadius: 8, padding: 10, fontSize: 14, cursor: "pointer", color: C.text } }, "Retour à la connexion")
+            h("button", { onClick: () => { setPage("manager"); setRegErr(""); setRegOk(""); }, style: { width: "100%", background: "none", border: "1.5px solid " + C.border, borderRadius: 8, padding: 10, fontSize: 14, cursor: "pointer", color: C.text } }, "Retour")
+          )
+        )
+      );
+
+      // Modal export
+      const exportModal = showExportModal && h("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" } },
+        h("div", { style: { background: C.white, borderRadius: 14, padding: "2rem", width: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" } },
+          h("h3", { style: { fontSize: 16, fontWeight: 700, marginBottom: 6 } }, "Exporter Excel"),
+          h("p", { style: { fontSize: 13, color: C.muted, marginBottom: 20 } }, "Choisissez la période à exporter. La règle des 18/19 s'applique automatiquement."),
+          h("div", { style: { marginBottom: 14 } },
+            h(Label, null, "Du (date de début)"),
+            h("input", { style: inp, type: "date", value: exportRange.from, onChange: e => setExportRange(p => ({ ...p, from: e.target.value })) })
+          ),
+          h("div", { style: { marginBottom: 24 } },
+            h(Label, null, "Au (date de fin)"),
+            h("input", { style: inp, type: "date", value: exportRange.to, onChange: e => setExportRange(p => ({ ...p, to: e.target.value })) })
+          ),
+          h("div", { style: { display: "flex", gap: 10 } },
+            h("button", {
+              onClick: async () => {
+                if (!exportRange.from || !exportRange.to) { alert("Veuillez saisir les deux dates."); return; }
+                setShowExportModal(false);
+                await exportExcel(exportRange.from, exportRange.to);
+                setExportRange({ from: "", to: "" });
+              },
+              style: { flex: 1, background: "#16A34A", color: "#fff", border: "none", borderRadius: 8, padding: 11, fontSize: 14, cursor: "pointer", fontWeight: 600 }
+            }, "Générer le fichier"),
+            h("button", {
+              onClick: () => { setShowExportModal(false); setExportRange({ from: "", to: "" }); },
+              style: { background: "none", border: "1px solid " + C.border, borderRadius: 8, padding: "11px 16px", fontSize: 14, cursor: "pointer", color: C.muted }
+            }, "Annuler")
           )
         )
       );
 
       // Page principale
       return h("div", { style: { minHeight: "100vh", background: C.bg } },
+        exportModal,
         navbar,
         h("div", { style: { maxWidth: 720, margin: "0 auto", padding: "2rem 1rem" } },
 
@@ -381,7 +676,7 @@
                       )
                     ),
                     h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } },
-                      h("div", null, h(Label, null, "Lieu (optionnel)"),        h("input", { style: inp, type: "text", placeholder: "Ex : Paris, Lyon…", value: l.lieu,    onChange: e => updateLine(l.id, "lieu",    e.target.value) })),
+                      h("div", null, h(Label, null, "Lieu *"),        h("input", { style: inp, type: "text", placeholder: "Ex : Paris, Lyon…", value: l.lieu,    onChange: e => updateLine(l.id, "lieu",    e.target.value) })),
                       h("div", null, h(Label, null, "Commentaire (optionnel)"), h("input", { style: inp, type: "text", placeholder: "Détails…",            value: l.comment, onChange: e => updateLine(l.id, "comment", e.target.value) }))
                     )
                   )
