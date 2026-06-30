@@ -258,6 +258,10 @@
       function addLine()      { setLines(p => [...p, emptyLine()]); }
       function removeLine(id) { if (lines.length > 1) setLines(p => p.filter(l => l.id !== id)); }
 
+      function datesOverlap(start1, end1, start2, end2) {
+        return start1 <= end2 && start2 <= end1;
+      }
+
       async function submitRequest() {
         setFormErr("");
         if (!managerId) { setFormErr("Veuillez sélectionner un manager."); return; }
@@ -265,6 +269,27 @@
           if (!l.startDate || !l.endDate || !l.primeType || !l.lieu) { setFormErr("Veuillez compléter toutes les lignes (lieu obligatoire)."); return; }
           if (l.startDate > l.endDate) { setFormErr("Date de fin antérieure à la date de début."); return; }
         }
+
+        // Chevauchement entre les lignes du formulaire en cours
+        for (let i = 0; i < lines.length; i++) {
+          for (let j = i + 1; j < lines.length; j++) {
+            if (datesOverlap(lines[i].startDate, lines[i].endDate, lines[j].startDate, lines[j].endDate)) {
+              setFormErr("Les dates se chevauchent entre la ligne " + (i + 1) + " et la ligne " + (j + 1) + ".");
+              return;
+            }
+          }
+        }
+
+        // Chevauchement avec des demandes déjà existantes (en attente ou approuvées)
+        const blockingReqs = requests.filter(r => r.employeeId === user.id && (r.status === "pending" || r.status === "approved"));
+        for (const l of lines) {
+          const conflict = blockingReqs.find(r => datesOverlap(l.startDate, l.endDate, r.startDate, r.endDate));
+          if (conflict) {
+            setFormErr("Les dates se chevauchent avec une demande existante (" + conflict.primeType + " du " + conflict.startDate + " au " + conflict.endDate + ").");
+            return;
+          }
+        }
+
         const mgr = users.find(u => u.id === parseInt(managerId));
         const newReqs = lines.map(l => ({
           id: Date.now() + Math.random(),
