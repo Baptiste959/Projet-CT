@@ -549,9 +549,7 @@
       // NavBar
       const navbar = h("nav", { style: { background: C.white, borderBottom: "1px solid " + C.border, padding: "0 1.5rem", height: 58, display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 } },
         h("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
-          h("div", { style: { width: 28, height: 28, background: C.primary, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center" } },
-            h("span", { style: { color: "#fff", fontSize: 13, fontWeight: 800 } }, "G")
-          ),
+          h("img", { src: "Ressources/Images/LOGO-CT.png", alt: "CT Engineering Group", style: { height: 38, objectFit: "contain" } }),
           h("span", { style: { fontWeight: 700, fontSize: 15, letterSpacing: -0.4 } }, "GestPrimes")
         ),
         user && h("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
