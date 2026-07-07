@@ -49,7 +49,7 @@
       { id: 3,  name: "Maël Jolivet",           email: "mael.jolivet@ctengineeringgroup.com",                role: "employee", password: "Jl9@vX3m", matricule: "EM103983" },
       { id: 4,  name: "Olivier Mousselon",      email: "olivier.mousselon@ctengineeringgroup.com",           role: "employee", password: "Ms2!pL6h", matricule: "EM103985" },
       { id: 5,  name: "Adrian Maguet",          email: "adrian.maguet@ctengineeringgroup.com",               role: "manager",  password: "Ry3@wJ6h", matricule: "EM103986" },
-      { id: 6,  name: "Amandine Cheineau",      email: "amandine.cheineau@ctengineeringgroup.com",           role: "employee", password: "Ch5#dF9q", matricule: "EM103988" },
+      { id: 6,  name: "Amandine Cheineau",      email: "amandine.cheineau@ctengineeringgroup.com",           role: "manager",  password: "Ch5#dF9q", matricule: "EM103988", hiddenFromSelect: true },
       { id: 7,  name: "Juliette Esnault",       email: "juliette.esnault@ctengineeringgroup.com",            role: "employee", password: "Es8!nB4x", matricule: "EM104022" },
       { id: 8,  name: "Mathieu Duchesne",       email: "mathieu.duchesne@ctengineeringgroup.com",            role: "employee", password: "Du6$mK1z", matricule: "EM104087" },
       { id: 9,  name: "Ludovic Pajot",          email: "ludovic.pajot@ctengineeringgroup.com",               role: "employee", password: "Pj3@tR7w", matricule: "EM104101" },
@@ -62,7 +62,7 @@
       { id: 16, name: "Marie Berlizot",         email: "marie.berlizot@ctengineeringgroup.com",              role: "employee", password: "Be8$vN4h", matricule: "EM104766" },
       { id: 17, name: "Philippe Milhaud",       email: "philippe.milhaud@ctengineeringgroup.com",            role: "employee", password: "Mi3#qX7z", matricule: "EM104810" },
       { id: 18, name: "Sylvain Bony",           email: "sylvain.bony@ctengineeringgroup.com",                role: "employee", password: "Bo5!rT9k", matricule: "EM104833" },
-      { id: 19, name: "Valérie Kergoat",        email: "valerie.kergoat.external@ctengineeringgroup.com",    role: "manager",  password: "Vk7$pN3x", matricule: "EM105011", hiddenFromSelect: true },
+      { id: 19, name: "Valérie Kergoat",        email: "valerie.kergoat@ctengineeringgroup.com",             role: "manager",  password: "Vk7$pN3x", matricule: "EM105011", hiddenFromSelect: true },
       { id: 20, name: "Guillaume Bridon",       email: "guillaume.bridon@ctengineeringgroup.com",            role: "employee", password: "Br4@wK2m", matricule: "EM105573" },
       { id: 21, name: "Anthony Bourdin",        email: "anthony.bourdin@ctengineeringgroup.com",             role: "employee", password: "Bd9#fQ6v", matricule: "EM105606" },
       { id: 22, name: "Hugo Martin",            email: "hugo.martin@ctengineeringgroup.com",                 role: "employee", password: "Ma2!nX8h", matricule: "EM106010" },
@@ -82,7 +82,7 @@
       { id: 36, name: "Kevin Gadret",           email: "kevin.gadret@ctengineeringgroup.com",                role: "employee", password: "Gd7#mX2z", matricule: "EM107034" },
       { id: 37, name: "Thomas-François Jacquet",email: "thomasfrançois.jacquet@ctengineeringgroup.com",      role: "employee", password: "Ja5$vK6h", matricule: "EM107116" },
       { id: 38, name: "Jessy Rousseau",         email: "jessy.rousseau@ctengineeringgroup.com",              role: "employee", password: "Ro9!dN3w", matricule: "EM107136" },
-      { id: 39, name: "Ewen Le Houerou",        email: "ewen.le@ctengineeringgroup.com",                     role: "employee", password: "Lh4#qP8v", matricule: "EM107159" },
+      { id: 39, name: "Ewen Le Houerou",        email: "ewen.lehouerou@ctengineeringgroup.com",              role: "employee", password: "Lh4#qP8v", matricule: "EM107159" },
     ];
 
     const PRIME_TYPES = [
@@ -112,6 +112,12 @@
 
     function Badge({ status }) {
       return h("span", { style: { display: "inline-block", padding: "3px 11px", borderRadius: 99, fontSize: 11, fontWeight: 700, background: STATUS_BG[status], color: STATUS_COLORS[status] } }, STATUS_LABELS[status]);
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return "";
+      const [y, m, d] = iso.split("-");
+      return d + "/" + m + "/" + y;
     }
 
     function emptyLine() {
@@ -268,6 +274,20 @@
         for (const l of lines) {
           if (!l.startDate || !l.endDate || !l.primeType || !l.lieu) { setFormErr("Veuillez compléter toutes les lignes (lieu obligatoire)."); return; }
           if (l.startDate > l.endDate) { setFormErr("Date de fin antérieure à la date de début."); return; }
+          if (cleanType(l.primeType) === "Prime de déplacement" || cleanType(l.primeType) === "Prime d'éloignement") {
+            // Vérifie qu'il y a au moins 3 jours ouvrés consécutifs (sans coupure de week-end)
+            let maxConsec = 0, consec = 0;
+            const [sy, sm, sd] = l.startDate.split("-").map(Number);
+            const [ey, em, ed] = l.endDate.split("-").map(Number);
+            const cur = new Date(sy, sm - 1, sd);
+            const end = new Date(ey, em - 1, ed);
+            while (cur <= end) {
+              if (cur.getDay() !== 0 && cur.getDay() !== 6) { consec++; maxConsec = Math.max(maxConsec, consec); }
+              else { consec = 0; }
+              cur.setDate(cur.getDate() + 1);
+            }
+            if (maxConsec < 3) { setFormErr("La prime \"" + cleanType(l.primeType) + "\" nécessite au moins 3 jours ouvrés consécutifs (max consécutif trouvé : " + maxConsec + " jour(s))."); return; }
+          }
         }
 
         // Chevauchement entre les lignes du formulaire en cours
@@ -319,16 +339,15 @@
         setRequests(updatedReqs); setNotifs(updatedNotifs);
       }
 
+      function cleanType(t) {
+        return (t || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+      }
+
       async function exportExcel(from, to) {
         const STATUS_FR = { pending: "En attente", approved: "Approuvée", rejected: "Refusée" };
         const BG = { approved: "C6EFCE", pending: "FFEB9C", rejected: "FFC7CE" };
         const FG = { approved: "276221", pending: "9C5700", rejected: "9C0006" };
         const TARIFS = { "Prime de déplacement": 25, "Prime d'éloignement": 35 };
-
-        // Retire le "(25€)" etc. du libellé pour l'affichage Excel
-        function cleanType(t) {
-          return (t || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
-        }
 
         // Déterminer le mois de référence (règle : début <= 18 = mois en cours, >= 19 = mois suivant)
         function getMoisRef(startDate) {
@@ -339,8 +358,10 @@
 
         // Nombre de jours ouvrés (lun-ven) entre deux dates incluses
         function nbJoursOuvres(r) {
-          const d1 = new Date(r.startDate);
-          const d2 = new Date(r.endDate);
+          const [sy, sm, sd] = r.startDate.split("-").map(Number);
+          const [ey, em, ed] = r.endDate.split("-").map(Number);
+          const d1 = new Date(sy, sm - 1, sd);
+          const d2 = new Date(ey, em - 1, ed);
           let count = 0;
           const cur = new Date(d1);
           while (cur <= d2) {
@@ -721,7 +742,7 @@
                   h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } },
                     h("div", null,
                       h("p", { style: { fontWeight: 600, fontSize: 14, margin: 0 } }, r.primeType),
-                      h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.startDate + " — " + r.endDate + (r.lieu ? " · " + r.lieu : ""))
+                      h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : ""))
                     ),
                     h(Badge, { status: r.status })
                   ),
@@ -735,7 +756,68 @@
 
           // VUE MANAGER
           user && user.role === "manager" && h(Fragment, null,
-            tabBar([["manager","À valider" + (pendingForManager.length > 0 ? " (" + pendingForManager.length + ")" : "")],["manager-history","Historique"]]),
+            tabBar([["form","Nouvelle demande"],["history","Mes demandes" + (myRequests.length > 0 ? " (" + myRequests.length + ")" : "")],["manager","À valider" + (pendingForManager.length > 0 ? " (" + pendingForManager.length + ")" : "")],["manager-history","Historique"]]),
+
+            page === "form" && h(Fragment, null,
+              h("h2", { style: { fontSize: 17, fontWeight: 700, marginBottom: "1.25rem" } }, "Soumettre une demande de prime"),
+              h("div", { style: { background: C.white, border: "1px solid " + C.border, borderRadius: 12, padding: "1.5rem" } },
+                h("div", { style: { marginBottom: 18 } },
+                  h(Label, null, "Manager valideur *"),
+                  h("select", { style: { ...inp, cursor: "pointer" }, value: managerId, onChange: e => setManagerId(e.target.value) },
+                    h("option", { value: "" }, "Sélectionner un manager"),
+                    ...managers.filter(m => m.id !== user.id).map(m => h("option", { key: m.id, value: m.id }, m.name))
+                  )
+                ),
+                h("div", { style: { height: 1, background: C.border, margin: "18px 0" } }),
+                h("p", { style: { fontWeight: 600, fontSize: 13, marginBottom: 12 } }, "Périodes de prime (" + lines.length + ")"),
+                ...lines.map((l, i) =>
+                  h("div", { key: l.id, style: { background: C.surface, border: "1px solid " + C.border, borderRadius: 10, padding: "1rem", marginBottom: 10 } },
+                    h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 } },
+                      h("span", { style: { fontSize: 11, fontWeight: 700, color: C.subtle, textTransform: "uppercase", letterSpacing: 0.6 } }, "Ligne " + (i + 1)),
+                      lines.length > 1 && h("button", { onClick: () => removeLine(l.id), style: { background: "none", border: "none", cursor: "pointer", color: C.subtle, fontSize: 18 } }, "×")
+                    ),
+                    h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 } },
+                      h("div", null, h(Label, null, "Date de début *"), h("input", { style: inp, type: "date", value: l.startDate, onChange: e => updateLine(l.id, "startDate", e.target.value) })),
+                      h("div", null, h(Label, null, "Date de fin *"),   h("input", { style: inp, type: "date", value: l.endDate,   onChange: e => updateLine(l.id, "endDate",   e.target.value) }))
+                    ),
+                    h("div", { style: { marginBottom: 12 } },
+                      h(Label, null, "Type de prime *"),
+                      h("select", { style: { ...inp, cursor: "pointer" }, value: l.primeType, onChange: e => updateLine(l.id, "primeType", e.target.value) },
+                        h("option", { value: "" }, "Sélectionner un type"),
+                        ...PRIME_TYPES.map(t => h("option", { key: t, value: t }, t))
+                      )
+                    ),
+                    h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } },
+                      h("div", null, h(Label, null, "Lieu *"),        h("input", { style: inp, type: "text", placeholder: "Ex : Paris, Lyon…", value: l.lieu,    onChange: e => updateLine(l.id, "lieu",    e.target.value) })),
+                      h("div", null, h(Label, null, "Commentaire (optionnel)"), h("input", { style: inp, type: "text", placeholder: "Détails…",            value: l.comment, onChange: e => updateLine(l.id, "comment", e.target.value) }))
+                    )
+                  )
+                ),
+                h("button", { onClick: addLine, style: { width: "100%", background: "none", border: "1.5px dashed " + C.border, borderRadius: 8, padding: 9, fontSize: 13, cursor: "pointer", color: C.muted, marginBottom: 16 } }, "+ Ajouter une ligne"),
+                formErr && h("p", { style: { color: C.danger, fontSize: 13, marginBottom: 12, fontWeight: 500 } }, formErr),
+                formOk  && h("p", { style: { color: C.success, fontSize: 13, marginBottom: 12, fontWeight: 500 } }, formOk),
+                h("button", { onClick: submitRequest, style: { background: C.primary, color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 14, cursor: "pointer", fontWeight: 600 } }, "Envoyer la demande")
+              )
+            ),
+
+            page === "history" && h(Fragment, null,
+              h("h2", { style: { fontSize: 17, fontWeight: 700, marginBottom: "1.25rem" } }, "Mes demandes"),
+              myRequests.length === 0 && h("p", { style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande pour l'instant."),
+              ...[...myRequests].reverse().map(r =>
+                h("div", { key: r.id, style: { background: C.white, border: "1px solid " + C.border, borderRadius: 10, padding: "1.25rem", marginBottom: 10 } },
+                  h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } },
+                    h("div", null,
+                      h("p", { style: { fontWeight: 600, fontSize: 14, margin: 0 } }, r.primeType),
+                      h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : ""))
+                    ),
+                    h(Badge, { status: r.status })
+                  ),
+                  h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, "Manager : " + r.managerName),
+                  r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
+                  h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR"))
+                )
+              )
+            ),
 
             page === "manager" && h(Fragment, null,
               h("h2", { style: { fontSize: 17, fontWeight: 700, marginBottom: "1.25rem" } }, "Demandes à valider"),
@@ -749,7 +831,7 @@
                     ),
                     h(Badge, { status: "pending" })
                   ),
-                  h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, r.startDate + " — " + r.endDate + (r.lieu ? " · " + r.lieu : "")),
+                  h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
                   r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
                   h("p", { style: { fontSize: 12, color: C.subtle, margin: "6px 0 0" } }, "Reçu le " + new Date(r.createdAt).toLocaleDateString("fr-FR")),
                   h("div", { style: { display: "flex", gap: 8, marginTop: 14 } },
@@ -772,7 +854,7 @@
                     ),
                     h(Badge, { status: r.status })
                   ),
-                  h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, r.startDate + " — " + r.endDate + (r.lieu ? " · " + r.lieu : "")),
+                  h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
                   r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
                   h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR"))
                 )
