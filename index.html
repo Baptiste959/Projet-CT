@@ -164,7 +164,7 @@
             if (Array.isArray(r)) setRequests(r);
             if (Array.isArray(n)) setNotifs(n);
           } catch {}
-        }, 8000);
+        }, 60000);
         return () => clearInterval(id);
       }, []);
 
