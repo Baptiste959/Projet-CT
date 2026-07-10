@@ -459,7 +459,7 @@
           const [yr, mo] = m.split("-");
           const label = moisLabels[mo] + " " + yr;
           typeKeys.forEach(t => {
-            colsDyn.push({ header: label + "\n" + t, key: m + "_" + t, width: 18 });
+            colsDyn.push({ header: label + "\n" + t, key: m + "_" + t, width: 21 });
           });
           colsDyn.push({ header: label + "\nTotal €", key: m + "_total", width: 14 });
         });
