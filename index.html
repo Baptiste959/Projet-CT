@@ -863,7 +863,12 @@
                   ),
                   h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
                   r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
-                  h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR"))
+                  h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR")),
+                  h("div", { style: { display: "flex", gap: 8, marginTop: 10 } },
+                    r.status !== "approved" && h("button", { onClick: () => updateStatus(r.id, "approved"), style: { background: "#16A34A", color: "#fff", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: 600 } }, "Approuver"),
+                    r.status !== "rejected" && h("button", { onClick: () => updateStatus(r.id, "rejected"), style: { background: "none", border: "1px solid #FECACA", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.danger, fontWeight: 500 } }, "Refuser"),
+                    r.status !== "pending"  && h("button", { onClick: () => updateStatus(r.id, "pending"),  style: { background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Remettre en attente")
+                  )
                 )
               )
             )
