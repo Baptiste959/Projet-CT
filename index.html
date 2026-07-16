@@ -347,13 +347,13 @@
         const STATUS_FR = { pending: "En attente", approved: "Approuvée", rejected: "Refusée" };
         const BG = { approved: "C6EFCE", pending: "FFEB9C", rejected: "FFC7CE" };
         const FG = { approved: "276221", pending: "9C5700", rejected: "9C0006" };
-        const TARIFS = { "Prime de déplacement": 25, "Prime d'éloignement": 35 };
+        const TARIFS = { "Prime de déplacement": 25, "Prime d'éloignement": 35, "Prime bureau/domicile": 30 };
 
-        // Déterminer le mois de référence (règle : début <= 18 = mois en cours, >= 19 = mois suivant)
-        function getMoisRef(startDate) {
-          const d = new Date(startDate);
-          if (d.getDate() >= 19) return new Date(d.getFullYear(), d.getMonth() + 1, 1);
-          return new Date(d.getFullYear(), d.getMonth(), 1);
+        // Déterminer le mois de référence : la date de fin détermine le mois
+        function getMoisRef(startDate, endDate) {
+          const src = endDate || startDate;
+          const [y, m, d] = src.split("-").map(Number);
+          return new Date(y, m - 1, 1);
         }
 
         // Nombre de jours ouvrés (lun-ven) entre deux dates incluses
@@ -372,14 +372,23 @@
           return count;
         }
 
-        const fromDate = from ? new Date(from) : null;
-        const toDate   = to   ? new Date(to)   : null;
+        const [fy, fm, fd] = from ? from.split("-").map(Number) : [null,null,null];
+        const [ty, tm, td] = to   ? to.split("-").map(Number)   : [null,null,null];
+        const fromDate = from ? new Date(fy, fm - 1, fd) : null;
+        const toDate   = to   ? new Date(ty, tm - 1, td) : null;
 
-        // Filtre Feuille 2 : date de début brute entre les 2 bornes choisies
+        // Si la période d'export fait <= 31 jours, toutes les demandes vont dans le mois de toDate
+        const exportDays = (fromDate && toDate) ? Math.round((toDate - fromDate) / 86400000) : 999;
+        const moisForcé  = exportDays <= 31 && toDate ? new Date(ty, tm - 1, 1) : null;
+
+        // Filtre Feuille 2 : demande incluse dans la période d'export (startDate ou endDate dans la plage)
         function inRange(r) {
-          const d = new Date(r.startDate);
-          if (fromDate && d < fromDate) return false;
-          if (toDate   && d > toDate)   return false;
+          const [sy, sm, sd] = r.startDate.split("-").map(Number);
+          const [ey, em, ed] = (r.endDate || r.startDate).split("-").map(Number);
+          const dStart = new Date(sy, sm - 1, sd);
+          const dEnd   = new Date(ey, em - 1, ed);
+          if (fromDate && dEnd < fromDate) return false;
+          if (toDate   && dStart > toDate) return false;
           return true;
         }
 
@@ -440,7 +449,7 @@
 
         const moisSet = new Set();
         approvedReqs.forEach(r => {
-          const m = getMoisRef(r.startDate);
+          const m = moisForcé || getMoisRef(r.startDate, r.endDate);
           moisSet.add(m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0"));
         });
         const moisList = [...moisSet].sort();
@@ -487,7 +496,7 @@
             const parts = (r.employeeName || "").trim().split(" ");
             empMap[key] = { nom: parts.slice(1).join(" ") || "", prenom: parts[0] || "", mat: emp.matricule || "", totals: {} };
           }
-          const m = getMoisRef(r.startDate);
+          const m = moisForcé || getMoisRef(r.startDate, r.endDate);
           const mKey = m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0");
           const typeNomR = cleanType(r.primeType);
           const colKey = mKey + "_" + typeNomR;
