@@ -231,7 +231,8 @@
       const myNotifs          = user ? notifs.filter(n => n.userId === user.id && !n.read) : [];
       const myRequests        = user ? requests.filter(r => r.employeeId === user.id) : [];
       const pendingForManager = user ? requests.filter(r => r.managerId === user.id && r.status === "pending") : [];
-      const allForManager     = user ? requests.filter(r => r.managerId === user.id) : [];
+      const isComptable       = user && (user.email === "amandine.cheineau@ctengineeringgroup.com" || user.email === "valerie.kergoat.external@ctengineeringgroup.com");
+      const allForManager     = user ? (isComptable ? [...requests] : requests.filter(r => r.managerId === user.id)) : [];
 
       async function login() {
         const fresh = await fsGet("meta", "users");
@@ -330,6 +331,12 @@
         setTimeout(() => setFormOk(""), 3000);
       }
 
+      async function togglePrisEnCompte(reqId) {
+        const updatedReqs = requests.map(r => r.id === reqId ? { ...r, prisEnCompte: !r.prisEnCompte } : r);
+        await fsSet("meta", "requests", updatedReqs);
+        setRequests(updatedReqs);
+      }
+
       async function updateStatus(reqId, status) {
         const req = requests.find(r => r.id === reqId);
         const updatedReqs   = requests.map(r => r.id === reqId ? { ...r, status } : r);
@@ -407,6 +414,7 @@
           { header: "Lieu",           key: "lieu",    width: 18 },
           { header: "Commentaire",    key: "comment", width: 26 },
           { header: "Statut",         key: "statut",  width: 14 },
+          { header: "Pris en compte", key: "pec",     width: 14 },
         ];
         ws1.getRow(1).eachCell(cell => {
           cell.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: "FF2563EB" } };
@@ -415,8 +423,8 @@
         });
         ws1.getRow(1).height = 22;
 
-        // Feuille 1 : historique complet, sans filtre de dates
-        const allReqs = [...requests].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // Feuille 1 : demandes comprises dans la période choisie
+        const allReqs = [...requests].filter(r => inRange(r)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         allReqs.forEach(r => {
           const parts  = (r.employeeName || "").trim().split(" ");
           const prenom = parts[0] || "";
@@ -433,10 +441,12 @@
             prix: prix ? prix + " €" : "",
             lieu: r.lieu || "", comment: r.comment || "",
             statut: STATUS_FR[r.status] || "",
+            pec: r.prisEnCompte ? "Oui" : "Non",
           });
-          row.eachCell(cell => {
-            cell.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: bg } };
-            cell.font      = { color: { argb: fg }, size: 11 };
+          row.eachCell((cell, colNumber) => {
+            const isPec = colNumber === row.cellCount;
+            cell.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: isPec && !r.prisEnCompte ? "FFFFC7CE" : bg } };
+            cell.font      = { color: { argb: isPec && !r.prisEnCompte ? "FF9C0006" : fg }, size: 11, bold: isPec };
             cell.alignment = { horizontal: "center", vertical: "middle" };
           });
           row.height = 18;
@@ -864,10 +874,11 @@
                   h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
                   r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
                   h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR")),
-                  h("div", { style: { display: "flex", gap: 8, marginTop: 10 } },
+                  h("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
                     r.status !== "approved" && h("button", { onClick: () => updateStatus(r.id, "approved"), style: { background: "#16A34A", color: "#fff", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: 600 } }, "Approuver"),
                     r.status !== "rejected" && h("button", { onClick: () => updateStatus(r.id, "rejected"), style: { background: "none", border: "1px solid #FECACA", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.danger, fontWeight: 500 } }, "Refuser"),
-                    r.status !== "pending"  && h("button", { onClick: () => updateStatus(r.id, "pending"),  style: { background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Remettre en attente")
+                    r.status !== "pending"  && h("button", { onClick: () => updateStatus(r.id, "pending"),  style: { background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Remettre en attente"),
+                    isComptable && h("button", { onClick: () => togglePrisEnCompte(r.id), style: { background: r.prisEnCompte ? "#1D4ED8" : "none", color: r.prisEnCompte ? "#fff" : C.muted, border: "1px solid " + (r.prisEnCompte ? "#1D4ED8" : C.border), borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: r.prisEnCompte ? 600 : 400 } }, r.prisEnCompte ? "✓ Pris en compte" : "Marquer pris en compte")
                   )
                 )
               )
