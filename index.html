@@ -120,8 +120,24 @@
       return d + "/" + m + "/" + y;
     }
 
+    function nbJoursOuvres(r) {
+      if (!r.startDate || !r.endDate) return 0;
+      const [sy, sm, sd] = r.startDate.split("-").map(Number);
+      const [ey, em, ed] = r.endDate.split("-").map(Number);
+      const d1 = new Date(sy, sm - 1, sd);
+      const d2 = new Date(ey, em - 1, ed);
+      let count = 0;
+      const cur = new Date(d1);
+      while (cur <= d2) {
+        const day = cur.getDay();
+        if (day !== 0 && day !== 6) count++;
+        cur.setDate(cur.getDate() + 1);
+      }
+      return count;
+    }
+
     function emptyLine() {
-      return { id: Date.now() + Math.random(), startDate: "", endDate: "", primeType: "", lieu: "", comment: "" };
+      return { id: Date.now() + Math.random(), startDate: "", endDate: "", primeType: "", lieu: "", comment: "", nbJours: "" };
     }
 
     function App() {
@@ -317,7 +333,7 @@
           employeeId: user.id, employeeName: user.name,
           managerId: parseInt(managerId), managerName: mgr ? mgr.name : "",
           startDate: l.startDate, endDate: l.endDate,
-          primeType: l.primeType, lieu: l.lieu, comment: l.comment,
+          primeType: l.primeType, lieu: l.lieu, comment: l.comment, nbJours: l.nbJours || "",
           status: "pending", createdAt: new Date().toISOString(),
         }));
         const updatedReqs   = [...requests, ...newReqs];
@@ -363,21 +379,6 @@
           return new Date(y, m - 1, 1);
         }
 
-        // Nombre de jours ouvrés (lun-ven) entre deux dates incluses
-        function nbJoursOuvres(r) {
-          const [sy, sm, sd] = r.startDate.split("-").map(Number);
-          const [ey, em, ed] = r.endDate.split("-").map(Number);
-          const d1 = new Date(sy, sm - 1, sd);
-          const d2 = new Date(ey, em - 1, ed);
-          let count = 0;
-          const cur = new Date(d1);
-          while (cur <= d2) {
-            const day = cur.getDay();
-            if (day !== 0 && day !== 6) count++;
-            cur.setDate(cur.getDate() + 1);
-          }
-          return count;
-        }
 
         const [fy, fm, fd] = from ? from.split("-").map(Number) : [null,null,null];
         const [ty, tm, td] = to   ? to.split("-").map(Number)   : [null,null,null];
@@ -437,7 +438,7 @@
             nom, prenom,
             deb: r.startDate || "", fin: r.endDate || "",
             type: typeNom,
-            jours: nbJoursOuvres(r),
+            jours: typeNom === "Prime bureau/domicile" ? (r.nbJours || "") : nbJoursOuvres(r),
             prix: prix ? prix + " €" : "",
             lieu: r.lieu || "", comment: r.comment || "",
             statut: STATUS_FR[r.status] || "",
@@ -510,7 +511,8 @@
           const mKey = m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0");
           const typeNomR = cleanType(r.primeType);
           const colKey = mKey + "_" + typeNomR;
-          const montant = (TARIFS[typeNomR] || 0) * nbJoursOuvres(r);
+          const joursR  = typeNomR === "Prime bureau/domicile" ? (parseInt(r.nbJours) || 0) : nbJoursOuvres(r);
+          const montant = (TARIFS[typeNomR] || 0) * joursR;
           empMap[key].totals[colKey] = (empMap[key].totals[colKey] || 0) + montant;
         });
 
@@ -741,6 +743,10 @@
                     h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } },
                       h("div", null, h(Label, null, "Lieu *"),        h("input", { style: inp, type: "text", placeholder: "Ex : Paris, Lyon…", value: l.lieu,    onChange: e => updateLine(l.id, "lieu",    e.target.value) })),
                       h("div", null, h(Label, null, "Commentaire (optionnel)"), h("input", { style: inp, type: "text", placeholder: "Détails…",            value: l.comment, onChange: e => updateLine(l.id, "comment", e.target.value) }))
+                    ),
+                    cleanType(l.primeType) === "Prime bureau/domicile" && h("div", { style: { marginTop: 12 } },
+                      h(Label, null, "Nb de jours concernés *"),
+                      h("input", { style: inp, type: "number", min: 1, placeholder: "Ex : 15", value: l.nbJours, onChange: e => updateLine(l.id, "nbJours", e.target.value) })
                     )
                   )
                 ),
@@ -764,6 +770,7 @@
                     h(Badge, { status: r.status })
                   ),
                   h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, "Manager : " + r.managerName),
+                  h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, cleanType(r.primeType) === "Prime bureau/domicile" ? "Nb de jours : " + (r.nbJours || "—") : "Jours ouvrés : " + nbJoursOuvres(r)),
                   r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
                   h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR"))
                 )
@@ -807,6 +814,10 @@
                     h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 } },
                       h("div", null, h(Label, null, "Lieu *"),        h("input", { style: inp, type: "text", placeholder: "Ex : Paris, Lyon…", value: l.lieu,    onChange: e => updateLine(l.id, "lieu",    e.target.value) })),
                       h("div", null, h(Label, null, "Commentaire (optionnel)"), h("input", { style: inp, type: "text", placeholder: "Détails…",            value: l.comment, onChange: e => updateLine(l.id, "comment", e.target.value) }))
+                    ),
+                    cleanType(l.primeType) === "Prime bureau/domicile" && h("div", { style: { marginTop: 12 } },
+                      h(Label, null, "Nb de jours concernés *"),
+                      h("input", { style: inp, type: "number", min: 1, placeholder: "Ex : 15", value: l.nbJours, onChange: e => updateLine(l.id, "nbJours", e.target.value) })
                     )
                   )
                 ),
@@ -849,6 +860,7 @@
                     h(Badge, { status: "pending" })
                   ),
                   h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
+                  h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, cleanType(r.primeType) === "Prime bureau/domicile" ? "Nb de jours : " + (r.nbJours || "—") : "Jours ouvrés : " + nbJoursOuvres(r)),
                   r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
                   h("p", { style: { fontSize: 12, color: C.subtle, margin: "6px 0 0" } }, "Reçu le " + new Date(r.createdAt).toLocaleDateString("fr-FR")),
                   h("div", { style: { display: "flex", gap: 8, marginTop: 14 } },
@@ -872,6 +884,7 @@
                     h(Badge, { status: r.status })
                   ),
                   h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
+                  h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, cleanType(r.primeType) === "Prime bureau/domicile" ? "Nb de jours : " + (r.nbJours || "—") : "Jours ouvrés : " + nbJoursOuvres(r)),
                   r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
                   h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR")),
                   h("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
