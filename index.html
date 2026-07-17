@@ -348,7 +348,11 @@
       }
 
       async function togglePrisEnCompte(reqId) {
-        const updatedReqs = requests.map(r => r.id === reqId ? { ...r, prisEnCompte: !r.prisEnCompte } : r);
+        const now = new Date().toISOString().split("T")[0];
+        const updatedReqs = requests.map(r => r.id === reqId
+          ? { ...r, prisEnCompte: !r.prisEnCompte, prisEnCompteDate: !r.prisEnCompte ? now : null }
+          : r
+        );
         await fsSet("meta", "requests", updatedReqs);
         setRequests(updatedReqs);
       }
@@ -780,7 +784,7 @@
 
           // VUE MANAGER
           user && user.role === "manager" && h(Fragment, null,
-            tabBar([["form","Nouvelle demande"],["history","Mes demandes" + (myRequests.length > 0 ? " (" + myRequests.length + ")" : "")],["manager","À valider" + (pendingForManager.length > 0 ? " (" + pendingForManager.length + ")" : "")],["manager-history","Historique"]]),
+            tabBar([["form","Nouvelle demande"],["history","Mes demandes" + (myRequests.length > 0 ? " (" + myRequests.length + ")" : "")],["manager","À valider" + (pendingForManager.length > 0 ? " (" + pendingForManager.length + ")" : "")],["manager-history","Historique"], ...(isComptable ? [["archives","Archives"]] : [])]),
 
             page === "form" && h(Fragment, null,
               h("h2", { style: { fontSize: 17, fontWeight: 700, marginBottom: "1.25rem" } }, "Soumettre une demande de prime"),
@@ -873,28 +877,61 @@
 
             page === "manager-history" && h(Fragment, null,
               h("h2", { style: { fontSize: 17, fontWeight: 700, marginBottom: "1.25rem" } }, "Historique des demandes"),
-              allForManager.length === 0 && h("p", { style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande reçue."),
-              ...[...allForManager].reverse().map(r =>
-                h("div", { key: r.id, style: { background: C.white, border: "1px solid " + C.border, borderRadius: 10, padding: "1.25rem", marginBottom: 10 } },
-                  h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } },
-                    h("div", null,
-                      h("p", { style: { fontWeight: 600, fontSize: 14, margin: 0 } }, r.primeType),
-                      h("p", { style: { fontSize: 13, color: C.text, fontWeight: 500, margin: "3px 0 0" } }, r.employeeName)
-                    ),
-                    h(Badge, { status: r.status })
-                  ),
-                  h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
-                  h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, cleanType(r.primeType) === "Prime bureau/domicile" ? "Nb de jours : " + (r.nbJours || "—") : "Jours ouvrés : " + nbJoursOuvres(r)),
-                  r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
-                  h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR")),
-                  h("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
-                    r.status === "pending" && h("button", { onClick: () => updateStatus(r.id, "approved"), style: { background: "#16A34A", color: "#fff", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: 600 } }, "Approuver"),
-                    r.status === "pending" && h("button", { onClick: () => updateStatus(r.id, "rejected"), style: { background: "none", border: "1px solid #FECACA", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.danger, fontWeight: 500 } }, "Refuser"),
-                    r.status !== "pending"  && h("button", { onClick: () => updateStatus(r.id, "pending"),  style: { background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Remettre en attente"),
-                    isComptable && h("button", { onClick: () => togglePrisEnCompte(r.id), style: { background: r.prisEnCompte ? "#1D4ED8" : "none", color: r.prisEnCompte ? "#fff" : C.muted, border: "1px solid " + (r.prisEnCompte ? "#1D4ED8" : C.border), borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: r.prisEnCompte ? 600 : 400 } }, r.prisEnCompte ? "✓ Pris en compte" : "Marquer pris en compte")
+              ...((() => {
+                const today = new Date().toISOString().split("T")[0];
+                const visible = allForManager.filter(r => !r.prisEnCompte || !r.prisEnCompteDate || r.prisEnCompteDate >= today);
+                return [
+                  visible.length === 0 && h("p", { key: "empty", style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande reçue."),
+                  ...[...visible].reverse().map(r =>
+                    h("div", { key: r.id, style: { background: C.white, border: "1px solid " + C.border, borderRadius: 10, padding: "1.25rem", marginBottom: 10 } },
+                      h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } },
+                        h("div", null,
+                          h("p", { style: { fontWeight: 600, fontSize: 14, margin: 0 } }, r.primeType),
+                          h("p", { style: { fontSize: 13, color: C.text, fontWeight: 500, margin: "3px 0 0" } }, r.employeeName)
+                        ),
+                        h(Badge, { status: r.status })
+                      ),
+                      h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
+                      h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, cleanType(r.primeType) === "Prime bureau/domicile" ? "Nb de jours : " + (r.nbJours || "—") : "Jours ouvrés : " + nbJoursOuvres(r)),
+                      r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
+                      h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR")),
+                      h("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
+                        r.status === "pending" && h("button", { onClick: () => updateStatus(r.id, "approved"), style: { background: "#16A34A", color: "#fff", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: 600 } }, "Approuver"),
+                        r.status === "pending" && h("button", { onClick: () => updateStatus(r.id, "rejected"), style: { background: "none", border: "1px solid #FECACA", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.danger, fontWeight: 500 } }, "Refuser"),
+                        r.status !== "pending" && h("button", { onClick: () => updateStatus(r.id, "pending"), style: { background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Remettre en attente"),
+                        isComptable && h("button", { onClick: () => togglePrisEnCompte(r.id), style: { background: r.prisEnCompte ? "#1D4ED8" : "none", color: r.prisEnCompte ? "#fff" : C.muted, border: "1px solid " + (r.prisEnCompte ? "#1D4ED8" : C.border), borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: r.prisEnCompte ? 600 : 400 } }, r.prisEnCompte ? "✓ Pris en compte" : "Marquer pris en compte")
+                      )
+                    )
                   )
-                )
-              )
+                ];
+              })())
+            ),
+
+            page === "archives" && isComptable && h(Fragment, null,
+              h("h2", { style: { fontSize: 17, fontWeight: 700, marginBottom: "1.25rem" } }, "Archives"),
+              ...((() => {
+                const today = new Date().toISOString().split("T")[0];
+                const archived = allForManager.filter(r => r.prisEnCompte && r.prisEnCompteDate && r.prisEnCompteDate < today);
+                return [
+                  archived.length === 0 && h("p", { key: "empty", style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande archivée."),
+                  ...[...archived].reverse().map(r =>
+                    h("div", { key: r.id, style: { background: C.white, border: "1px solid " + C.border, borderRadius: 10, padding: "1.25rem", marginBottom: 10, opacity: 0.8 } },
+                      h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } },
+                        h("div", null,
+                          h("p", { style: { fontWeight: 600, fontSize: 14, margin: 0 } }, r.primeType),
+                          h("p", { style: { fontSize: 13, color: C.text, fontWeight: 500, margin: "3px 0 0" } }, r.employeeName)
+                        ),
+                        h(Badge, { status: r.status })
+                      ),
+                      h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
+                      h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, cleanType(r.primeType) === "Prime bureau/domicile" ? "Nb de jours : " + (r.nbJours || "—") : "Jours ouvrés : " + nbJoursOuvres(r)),
+                      r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
+                      h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Archivé le " + fmtDate(r.prisEnCompteDate)),
+                      h("button", { onClick: () => togglePrisEnCompte(r.id), style: { marginTop: 10, background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Retirer des archives")
+                    )
+                  )
+                ];
+              })())
             )
           )
         )
