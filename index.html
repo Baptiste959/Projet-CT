@@ -250,7 +250,7 @@
       const myNotifs          = user ? notifs.filter(n => n.userId === user.id && !n.read) : [];
       const myRequests        = user ? requests.filter(r => r.employeeId === user.id) : [];
       const pendingForManager = user ? requests.filter(r => r.managerId === user.id && r.status === "pending") : [];
-      const isComptable       = user && (user.email === "amandine.cheineau@ctengineeringgroup.com" || user.email === "valerie.kergoat.external@ctengineeringgroup.com");
+      const isComptable       = user && (user.email === "amandine.cheineau@ctengineeringgroup.com" || user.email === "valerie.kergoat@ctengineeringgroup.com");
       const allForManager     = user ? (isComptable ? [...requests] : requests.filter(r => r.managerId === user.id)) : [];
 
       async function login() {
@@ -887,8 +887,7 @@
             page === "manager-history" && h(Fragment, null,
               h("h2", { style: { fontSize: 17, fontWeight: 700, marginBottom: "1.25rem" } }, "Historique des demandes"),
               ...((() => {
-                const today = new Date().toISOString().split("T")[0];
-                const visible = allForManager.filter(r => !r.prisEnCompte || !r.prisEnCompteDate || r.prisEnCompteDate >= today);
+                const visible = allForManager.filter(r => !r.prisEnCompte);
                 return [
                   visible.length === 0 && h("p", { key: "empty", style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande reçue."),
                   ...[...visible].reverse().map(r =>
@@ -905,9 +904,9 @@
                       r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
                       h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR")),
                       h("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
-                        r.status === "pending" && h("button", { onClick: () => updateStatus(r.id, "approved"), style: { background: "#16A34A", color: "#fff", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: 600 } }, "Approuver"),
-                        r.status === "pending" && h("button", { onClick: () => updateStatus(r.id, "rejected"), style: { background: "none", border: "1px solid #FECACA", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.danger, fontWeight: 500 } }, "Refuser"),
-                        r.status !== "pending" && h("button", { onClick: () => updateStatus(r.id, "pending"), style: { background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Remettre en attente"),
+                        isComptable && r.status === "pending" && h("button", { onClick: () => updateStatus(r.id, "approved"), style: { background: "#16A34A", color: "#fff", border: "none", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: 600 } }, "Approuver"),
+                        isComptable && r.status === "pending" && h("button", { onClick: () => updateStatus(r.id, "rejected"), style: { background: "none", border: "1px solid #FECACA", borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.danger, fontWeight: 500 } }, "Refuser"),
+                        isComptable && r.status !== "pending" && h("button", { onClick: () => updateStatus(r.id, "pending"), style: { background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Remettre en attente"),
                         isComptable && h("button", { onClick: () => togglePrisEnCompte(r.id), style: { background: r.prisEnCompte ? "#1D4ED8" : "none", color: r.prisEnCompte ? "#fff" : C.muted, border: "1px solid " + (r.prisEnCompte ? "#1D4ED8" : C.border), borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", fontWeight: r.prisEnCompte ? 600 : 400 } }, r.prisEnCompte ? "✓ Pris en compte" : "Marquer pris en compte")
                       )
                     )
@@ -919,8 +918,7 @@
             page === "archives" && isComptable && h(Fragment, null,
               h("h2", { style: { fontSize: 17, fontWeight: 700, marginBottom: "1.25rem" } }, "Archives"),
               ...((() => {
-                const today = new Date().toISOString().split("T")[0];
-                const archived = allForManager.filter(r => r.prisEnCompte && r.prisEnCompteDate && r.prisEnCompteDate < today);
+                const archived = allForManager.filter(r => r.prisEnCompte);
                 return [
                   archived.length === 0 && h("p", { key: "empty", style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande archivée."),
                   ...[...archived].reverse().map(r =>
