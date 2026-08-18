@@ -120,6 +120,10 @@
       return d + "/" + m + "/" + y;
     }
 
+    function todayISO() {
+      return new Date().toISOString().split("T")[0];
+    }
+
     function nbJoursOuvres(r) {
       if (!r.startDate || !r.endDate) return 0;
       const [sy, sm, sd] = r.startDate.split("-").map(Number);
@@ -296,6 +300,7 @@
         for (const l of lines) {
           if (!l.startDate || !l.endDate || !l.primeType || !l.lieu) { setFormErr("Veuillez compléter toutes les lignes (lieu obligatoire)."); return; }
           if (l.startDate > l.endDate) { setFormErr("Date de fin antérieure à la date de début."); return; }
+          if (l.startDate > todayISO()) { setFormErr("La date de début ne peut pas être postérieure à aujourd'hui (pas d'avance de phase)."); return; }
           if (cleanType(l.primeType) === "Prime de déplacement" || cleanType(l.primeType) === "Prime d'éloignement") {
             // Vérifie qu'il y a au moins 3 jours ouvrés consécutifs (sans coupure de week-end)
             let maxConsec = 0, consec = 0;
@@ -743,7 +748,7 @@
                       lines.length > 1 && h("button", { onClick: () => removeLine(l.id), style: { background: "none", border: "none", cursor: "pointer", color: C.subtle, fontSize: 18 } }, "×")
                     ),
                     h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 } },
-                      h("div", null, h(Label, null, "Date de début *"), h("input", { style: inp, type: "date", value: l.startDate, onChange: e => updateLine(l.id, "startDate", e.target.value) })),
+                      h("div", null, h(Label, null, "Date de début *"), h("input", { style: inp, type: "date", max: todayISO(), value: l.startDate, onChange: e => updateLine(l.id, "startDate", e.target.value) })),
                       h("div", null, h(Label, null, "Date de fin *"),   h("input", { style: inp, type: "date", value: l.endDate,   onChange: e => updateLine(l.id, "endDate",   e.target.value) }))
                     ),
                     h("div", { style: { marginBottom: 12 } },
@@ -814,7 +819,7 @@
                       lines.length > 1 && h("button", { onClick: () => removeLine(l.id), style: { background: "none", border: "none", cursor: "pointer", color: C.subtle, fontSize: 18 } }, "×")
                     ),
                     h("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 } },
-                      h("div", null, h(Label, null, "Date de début *"), h("input", { style: inp, type: "date", value: l.startDate, onChange: e => updateLine(l.id, "startDate", e.target.value) })),
+                      h("div", null, h(Label, null, "Date de début *"), h("input", { style: inp, type: "date", max: todayISO(), value: l.startDate, onChange: e => updateLine(l.id, "startDate", e.target.value) })),
                       h("div", null, h(Label, null, "Date de fin *"),   h("input", { style: inp, type: "date", value: l.endDate,   onChange: e => updateLine(l.id, "endDate",   e.target.value) }))
                     ),
                     h("div", { style: { marginBottom: 12 } },
