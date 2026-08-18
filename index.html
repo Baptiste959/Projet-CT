@@ -415,6 +415,16 @@
         }
 
         const wb = new ExcelJS.Workbook();
+        const periodeLabel = "Période exportée : du " + fmtDate(from) + " au " + fmtDate(to);
+
+        function addTitleRow(ws) {
+          ws.insertRow(1, [periodeLabel]);
+          ws.mergeCells(1, 1, 1, ws.columnCount);
+          const cell = ws.getCell(1, 1);
+          cell.font      = { bold: true, size: 12, color: { argb: "FF0F172A" } };
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+          ws.getRow(1).height = 24;
+        }
 
         // ── Feuille 1 : toutes les demandes ──────────────────────────
         const ws1 = wb.addWorksheet("Toutes les demandes");
@@ -437,9 +447,10 @@
           cell.alignment = { horizontal: "center", vertical: "middle" };
         });
         ws1.getRow(1).height = 22;
+        addTitleRow(ws1);
 
-        // Feuille 1 : demandes comprises dans la période choisie
-        const allReqs = [...requests].filter(r => inRange(r)).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // Feuille 1 : demandes comprises dans la période choisie, hors demandes archivées (pris en compte)
+        const allReqs = [...requests].filter(r => inRange(r) && !r.prisEnCompte).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         allReqs.forEach(r => {
           const parts  = (r.employeeName || "").trim().split(" ");
           const prenom = parts[0] || "";
@@ -506,6 +517,7 @@
           cell.font      = { bold: true, color: { argb: "FFFFFFFF" }, size: 10 };
           cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
         });
+        addTitleRow(ws2);
 
         // Regrouper par employé : montant € = tarif × jours ouvrés
         const empMap = {};
