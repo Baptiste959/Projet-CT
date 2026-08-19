@@ -167,6 +167,7 @@
       const [syncing,    setSyncing]    = useState(false);
       const [showExportModal, setShowExportModal] = useState(false);
       const [exportRange,     setExportRange]     = useState({ from: "", to: "" });
+      const [archiveSearch,   setArchiveSearch]   = useState("");
 
       const loadAll = useCallback(async () => {
         try {
@@ -957,10 +958,18 @@
 
             page === "archives" && isComptable && h(Fragment, null,
               h("h2", { style: { fontSize: 17, fontWeight: 700, marginBottom: "1.25rem" } }, "Archives"),
+              h("input", {
+                style: { ...inp, marginBottom: 16 },
+                type: "text",
+                placeholder: "Rechercher par nom…",
+                value: archiveSearch,
+                onChange: e => setArchiveSearch(e.target.value)
+              }),
               ...((() => {
-                const archived = allForManager.filter(r => r.prisEnCompte);
+                const q = archiveSearch.trim().toLowerCase();
+                const archived = allForManager.filter(r => r.prisEnCompte && (!q || (r.employeeName || "").toLowerCase().includes(q)));
                 return [
-                  archived.length === 0 && h("p", { key: "empty", style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, "Aucune demande archivée."),
+                  archived.length === 0 && h("p", { key: "empty", style: { color: C.muted, textAlign: "center", marginTop: "2rem" } }, q ? "Aucune demande archivée pour cette recherche." : "Aucune demande archivée."),
                   ...[...archived].reverse().map(r =>
                     h("div", { key: r.id, style: { background: C.white, border: "1px solid " + C.border, borderRadius: 10, padding: "1.25rem", marginBottom: 10, opacity: 0.8 } },
                       h("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 } },
