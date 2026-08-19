@@ -481,7 +481,7 @@
         // ── Feuille 2 : récap par employé (montants en €) ────────────
         const ws2 = wb.addWorksheet("Récap mensuel");
 
-        const approvedReqs = requests.filter(r => r.status === "approved" && inRange(r));
+        const approvedReqs = requests.filter(r => r.status === "approved" && !r.prisEnCompte && inRange(r));
 
         const moisSet = new Set();
         approvedReqs.forEach(r => {
@@ -544,6 +544,7 @@
 
         const empList = Object.values(empMap).sort((a, b) => a.nom.localeCompare(b.nom));
 
+        const colTotals = {};
         empList.forEach(emp => {
           const rowData = { nom: emp.nom, prenom: emp.prenom, mat: emp.mat };
           moisList.forEach(m => {
@@ -552,8 +553,10 @@
               const v = emp.totals[m + "_" + t] || 0;
               rowData[m + "_" + t] = v > 0 ? v + " €" : "";
               totalMois += v;
+              colTotals[m + "_" + t] = (colTotals[m + "_" + t] || 0) + v;
             });
             rowData[m + "_total"] = totalMois > 0 ? totalMois + " €" : "";
+            colTotals[m + "_total"] = (colTotals[m + "_total"] || 0) + totalMois;
           });
           const row = ws2.addRow(rowData);
           row.height = 18;
@@ -568,6 +571,25 @@
             if (c.value) c.font = { bold: true, size: 11 };
           });
         });
+
+        // Ligne de total général par colonne (mois × type + total mois)
+        const totalRowData = { nom: "TOTAL" };
+        moisList.forEach(m => {
+          typeKeys.forEach(t => {
+            const v = colTotals[m + "_" + t] || 0;
+            totalRowData[m + "_" + t] = v > 0 ? v + " €" : "";
+          });
+          const vt = colTotals[m + "_total"] || 0;
+          totalRowData[m + "_total"] = vt > 0 ? vt + " €" : "";
+        });
+        const totalRow = ws2.addRow(totalRowData);
+        totalRow.height = 20;
+        totalRow.eachCell(cell => {
+          cell.fill      = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE2E8F0" } };
+          cell.font      = { bold: true, size: 11 };
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+        });
+        totalRow.getCell("nom").alignment = { horizontal: "left", vertical: "middle" };
 
         // Téléchargement
         const buffer = await wb.xlsx.writeBuffer();
