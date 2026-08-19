@@ -918,6 +918,7 @@
                       ),
                       h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
                       h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, cleanType(r.primeType) === "Prime bureau/domicile" ? "Nb de jours : " + (r.nbJours || "—") : "Jours ouvrés : " + nbJoursOuvres(r)),
+                      isComptable && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, "Manager : " + r.managerName),
                       r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
                       h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Soumis le " + new Date(r.createdAt).toLocaleDateString("fr-FR")),
                       h("div", { style: { display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" } },
@@ -949,6 +950,7 @@
                       ),
                       h("p", { style: { fontSize: 13, color: C.muted, margin: "4px 0 0" } }, fmtDate(r.startDate) + " — " + fmtDate(r.endDate) + (r.lieu ? " · " + r.lieu : "")),
                       h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, cleanType(r.primeType) === "Prime bureau/domicile" ? "Nb de jours : " + (r.nbJours || "—") : "Jours ouvrés : " + nbJoursOuvres(r)),
+                      h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, "Manager : " + r.managerName),
                       r.comment && h("p", { style: { fontSize: 13, color: C.muted, margin: "3px 0 0" } }, r.comment),
                       h("p", { style: { fontSize: 12, color: C.subtle, margin: "8px 0 0" } }, "Archivé le " + fmtDate(r.prisEnCompteDate)),
                       h("button", { onClick: () => togglePrisEnCompte(r.id), style: { marginTop: 10, background: "none", border: "1px solid " + C.border, borderRadius: 7, padding: "6px 14px", fontSize: 12, cursor: "pointer", color: C.muted } }, "Retirer des archives")
