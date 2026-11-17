@@ -167,6 +167,7 @@
       const [loading,    setLoading]    = useState(true);
       const [syncing,    setSyncing]    = useState(false);
       const [showExportModal, setShowExportModal] = useState(false);
+      const [showClosureModal, setShowClosureModal] = useState(true);
       const [exportRange,     setExportRange]     = useState({ from: "", to: "" });
       const [archiveSearch,   setArchiveSearch]   = useState("");
 
@@ -621,6 +622,20 @@
         setNotifs(updated); setShowNotifs(false);
       }
 
+      const closureModal = showClosureModal && h("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
+        h("div", { style: { background: C.white, borderRadius: 14, padding: "2rem", width: 420, maxWidth: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" } },
+          h("h3", { style: { fontSize: 18, fontWeight: 700, marginBottom: 12 } }, "GestPrimes ferme ses portes"),
+          h("p", { style: { fontSize: 14, color: C.muted, marginBottom: 12, lineHeight: 1.5 } }, "Les demandes de primes ne se font désormais plus sur cette application."),
+          h("p", { style: { fontSize: 14, color: C.muted, marginBottom: 24, lineHeight: 1.5 } }, "Merci de vous rendre directement sur notre gestionnaire de planning pour effectuer vos demandes."),
+          h("a", {
+            href: "https://gestionnaire-planning-ct.onrender.com/",
+            target: "_blank",
+            rel: "noopener noreferrer",
+            style: { display: "block", background: C.primary, color: "#fff", border: "none", borderRadius: 8, padding: 11, fontSize: 14, cursor: "pointer", fontWeight: 600, textAlign: "center", textDecoration: "none" }
+          }, "Accéder au gestionnaire de planning")
+        )
+      );
+
       // Écran de chargement
       if (loading) return h("div", { style: { minHeight: "100vh", background: C.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 } },
         h("div", { style: { width: 36, height: 36, border: "3px solid " + C.border, borderTop: "3px solid " + C.primary, borderRadius: "50%", animation: "spin .8s linear infinite" } }),
@@ -683,6 +698,7 @@
 
       // Page login
       if (page === "login") return h("div", { style: { minHeight: "100vh", background: C.bg } },
+        closureModal,
         navbar,
         h("div", { style: { maxWidth: 420, margin: "3rem auto", padding: "0 1rem" } },
           h("div", { style: { background: C.white, border: "1px solid " + C.border, borderRadius: 12, padding: "1.5rem" } },
@@ -708,6 +724,7 @@
 
       // Page register (accessible uniquement aux managers connectés)
       if (page === "register") return h("div", { style: { minHeight: "100vh", background: C.bg } },
+        closureModal,
         navbar,
         h("div", { style: { maxWidth: 420, margin: "3rem auto", padding: "0 1rem" } },
           h("div", { style: { background: C.white, border: "1px solid " + C.border, borderRadius: 12, padding: "1.5rem" } },
@@ -734,7 +751,6 @@
         )
       );
 
-      // Modal export
       const exportModal = showExportModal && h("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center" } },
         h("div", { style: { background: C.white, borderRadius: 14, padding: "2rem", width: 380, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" } },
           h("h3", { style: { fontSize: 16, fontWeight: 700, marginBottom: 6 } }, "Exporter Excel"),
@@ -767,6 +783,7 @@
 
       // Page principale
       return h("div", { style: { minHeight: "100vh", background: C.bg } },
+        closureModal,
         exportModal,
         navbar,
         h("div", { style: { maxWidth: 720, margin: "0 auto", padding: "2rem 1rem" } },
