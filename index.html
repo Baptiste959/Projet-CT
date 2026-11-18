@@ -624,8 +624,13 @@
       }
 
       const closureModal = showClosureModal && h("div", { style: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 } },
-        h("div", { style: { background: C.white, borderRadius: 14, padding: "2rem", width: 420, maxWidth: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" } },
-          h("h3", { style: { fontSize: 18, fontWeight: 700, marginBottom: 12 } }, "GestPrimes ferme ses portes"),
+        h("div", { style: { position: "relative", background: C.white, borderRadius: 14, padding: "2rem", width: 420, maxWidth: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" } },
+          h("button", {
+            onClick: () => setShowClosureModal(false),
+            "aria-label": "Fermer",
+            style: { position: "absolute", top: 12, right: 12, background: "none", border: "none", fontSize: 20, lineHeight: 1, cursor: "pointer", color: C.muted, padding: 4 }
+          }, "×"),
+          h("h3", { style: { fontSize: 18, fontWeight: 700, marginBottom: 12, paddingRight: 20 } }, "GestPrimes ferme ses portes"),
           h("p", { style: { fontSize: 14, color: C.muted, marginBottom: 12, lineHeight: 1.5 } }, "Les demandes de primes ne se font désormais plus sur cette application."),
           h("p", { style: { fontSize: 14, color: C.muted, marginBottom: 24, lineHeight: 1.5 } }, "Merci de vous rendre directement sur notre gestionnaire de planning pour effectuer vos demandes."),
           h("a", {
